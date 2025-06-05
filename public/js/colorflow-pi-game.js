@@ -155,7 +155,7 @@
             },
             medium: { 
                 coins: 1200, 
-                price: 2.5, // Prix en Pi
+                price: 1.5, // Prix en Pi
                 bonus: 300, 
                 name: 'Medium Pack',
                 icon: 'fas fa-money-bill',
@@ -164,7 +164,7 @@
             },
             large: { 
                 coins: 2500, 
-                price: 5.0, // Prix en Pi
+                price: 2.0, // Prix en Pi
                 bonus: 750, 
                 name: 'Large Pack',
                 icon: 'fas fa-treasure-chest',
@@ -173,7 +173,7 @@
             },
             mega: { 
                 coins: 6000, 
-                price: 10.0, // Prix en Pi
+                price: 5.0, // Prix en Pi
                 bonus: 2000, 
                 name: 'Mega Pack',
                 icon: 'fas fa-crown',
@@ -183,7 +183,7 @@
         },
         themes: {
             default: { id: 'default', name: 'Classic', price: 0, icon: 'fas fa-palette', description: 'Original ColorFlow colors', type: 'free' },
-            neon: { id: 'neon', name: 'Neon Lights', price: 0.8, colors: THEME_COLORS.neon, icon: 'fas fa-lightbulb', description: 'Bright electric colors', type: 'pi' },
+            neon: { id: 'neon', name: 'Neon Lights', price: 0.005, colors: THEME_COLORS.neon, icon: 'fas fa-lightbulb', description: 'Bright electric colors', type: 'pi' },
             aqua: { id: 'aqua', name: 'Ocean Depth', price: 0.8, colors: THEME_COLORS.aqua, icon: 'fas fa-water', description: 'Deep sea blues and greens', type: 'pi' },
             space: { id: 'space', name: 'Galaxy', price: 1.2, colors: THEME_COLORS.space, icon: 'fas fa-rocket', description: 'Cosmic purples and blues', type: 'pi' },
             amega: { id: 'fixio', name: 'Fixio Blur', price: 2.0, colors: THEME_COLORS.amega, icon: 'fas fa-crown', description: 'Premium studio theme', type: 'pi' }
