@@ -1,4 +1,4 @@
-// ColorFlow Infinity game - Version complète avec économie fonctionnelle et timer réparé
+// ColorFlow Infinity game - Version complète avec économie Pi Network
 
 (function() {
     // Verify dependencies
@@ -92,7 +92,7 @@
         }
     };
 
-    // Powerups configuration
+    // Powerups configuration (prix en Pi)
     const POWERUPS = {
         timeSlow: {
             icon: "fas fa-clock",
@@ -100,7 +100,7 @@
             activeClass: "bg-purple-600",
             duration: 15000,
             cooldown: 25000,
-            price: 80,
+            price: 0.02, // Prix en Pi
             effect: "Freezes time for 15 seconds"
         },
         magnet: {
@@ -109,7 +109,7 @@
             activeClass: "bg-blue-600",
             duration: 8000,
             cooldown: 20000,
-            price: 60,
+            price: 0.015, // Prix en Pi
             effect: "Attracts points to center"
         },
         colorBomb: {
@@ -118,7 +118,7 @@
             activeClass: "bg-red-600",
             duration: 2000,
             cooldown: 30000,
-            price: 120,
+            price: 0.03, // Prix en Pi
             effect: "Destroys 1/3 of all points"
         },
         doublePoints: {
@@ -127,12 +127,12 @@
             activeClass: "bg-yellow-600",
             duration: 10000,
             cooldown: 25000,
-            price: 100,
+            price: 0.025, // Prix en Pi
             effect: "Triple points for 10 seconds"
         }
     };
 
-    // Store configuration avec coin packs
+    // Store configuration avec TOUS les prix en Pi Network
     const STORE_ITEMS = {
         coinPacks: {
             starter: { 
@@ -146,53 +146,53 @@
             },
             small: { 
                 coins: 500, 
-                price: 1.99, 
+                price: 1.0, // Prix en Pi
                 bonus: 100, 
                 name: 'Small Pack',
                 icon: 'fas fa-coins',
                 description: '500 + 100 bonus coins',
-                type: 'purchase'
+                type: 'pi'
             },
             medium: { 
                 coins: 1200, 
-                price: 4.99, 
+                price: 2.5, // Prix en Pi
                 bonus: 300, 
                 name: 'Medium Pack',
                 icon: 'fas fa-money-bill',
                 description: '1200 + 300 bonus coins',
-                type: 'purchase'
+                type: 'pi'
             },
             large: { 
                 coins: 2500, 
-                price: 9.99, 
+                price: 5.0, // Prix en Pi
                 bonus: 750, 
                 name: 'Large Pack',
                 icon: 'fas fa-treasure-chest',
                 description: '2500 + 750 bonus coins',
-                type: 'purchase'
+                type: 'pi'
             },
             mega: { 
                 coins: 6000, 
-                price: 19.99, 
+                price: 10.0, // Prix en Pi
                 bonus: 2000, 
                 name: 'Mega Pack',
                 icon: 'fas fa-crown',
                 description: '6000 + 2000 bonus coins - Best Value!',
-                type: 'purchase'
+                type: 'pi'
             }
         },
         themes: {
-            default: { id: 'default', name: 'Classic', price: 0, icon: 'fas fa-palette', description: 'Original ColorFlow colors' },
-            neon: { id: 'neon', name: 'Neon Lights', price: 300, colors: THEME_COLORS.neon, icon: 'fas fa-lightbulb', description: 'Bright electric colors' },
-            aqua: { id: 'aqua', name: 'Ocean Depth', price: 300, colors: THEME_COLORS.aqua, icon: 'fas fa-water', description: 'Deep sea blues and greens' },
-            space: { id: 'space', name: 'Galaxy', price: 500, colors: THEME_COLORS.space, icon: 'fas fa-rocket', description: 'Cosmic purples and blues' },
-            amega: { id: 'fixio', name: 'fixio blur', price: 800, colors: THEME_COLORS.amega, icon: 'fas fa-crown', description: 'Premium studio theme' }
+            default: { id: 'default', name: 'Classic', price: 0, icon: 'fas fa-palette', description: 'Original ColorFlow colors', type: 'free' },
+            neon: { id: 'neon', name: 'Neon Lights', price: 0.8, colors: THEME_COLORS.neon, icon: 'fas fa-lightbulb', description: 'Bright electric colors', type: 'pi' },
+            aqua: { id: 'aqua', name: 'Ocean Depth', price: 0.8, colors: THEME_COLORS.aqua, icon: 'fas fa-water', description: 'Deep sea blues and greens', type: 'pi' },
+            space: { id: 'space', name: 'Galaxy', price: 1.2, colors: THEME_COLORS.space, icon: 'fas fa-rocket', description: 'Cosmic purples and blues', type: 'pi' },
+            amega: { id: 'fixio', name: 'Fixio Blur', price: 2.0, colors: THEME_COLORS.amega, icon: 'fas fa-crown', description: 'Premium studio theme', type: 'pi' }
         },
         effects: {
-            default: { id: 'default', name: 'Classic', price: 0, icon: 'fas fa-star', description: 'Standard visual effects' },
-            sparkle: { id: 'sparkle', name: 'Sparkle', price: 250, icon: 'fas fa-star', description: 'Glittering star effects' },
-            trail: { id: 'trail', name: 'Neon Trail', price: 400, icon: 'fas fa-fire', description: 'Glowing connection trails' },
-            explosion: { id: 'explosion', name: 'Star Burst', price: 600, icon: 'fas fa-bomb', description: 'Explosive point effects' }
+            default: { id: 'default', name: 'Classic', price: 0, icon: 'fas fa-star', description: 'Standard visual effects', type: 'free' },
+            sparkle: { id: 'sparkle', name: 'Sparkle', price: 0.6, icon: 'fas fa-star', description: 'Glittering star effects', type: 'pi' },
+            trail: { id: 'trail', name: 'Neon Trail', price: 1.0, icon: 'fas fa-fire', description: 'Glowing connection trails', type: 'pi' },
+            explosion: { id: 'explosion', name: 'Star Burst', price: 1.5, icon: 'fas fa-bomb', description: 'Explosive point effects', type: 'pi' }
         }
     };
 
@@ -675,7 +675,7 @@
         );
     };
 
-    // Store Modal COMPLET avec coin packs
+    // Store Modal COMPLET avec prix Pi Network
     const StoreModal = ({ show, onClose, coins, onPurchase, onWatchAd, activeTheme, setActiveTheme, activeEffect, setActiveEffect, userInventory }) => {
         if (!show) return null;
         
@@ -692,7 +692,7 @@
                     className: 'store-header',
                     key: 'header'
                 }, [
-                    React.createElement('h2', { className: 'text-3xl font-bold text-white' }, 'Game Store'),
+                    React.createElement('h2', { className: 'text-3xl font-bold text-white' }, 'Pi Network Store'),
                     React.createElement('div', { className: 'flex items-center gap-4' }, [
                         React.createElement('div', { 
                             className: 'flex items-center bg-black/30 rounded-xl px-4 py-2 border border-yellow-400/50' 
@@ -708,15 +708,16 @@
                     ])
                 ]),
                 
-                // COIN PACKS SECTION - NOUVEAU
+                // COIN PACKS SECTION - Pi Network
                 React.createElement('div', { className: 'mb-8', key: 'coin-packs-section' }, [
                     React.createElement('h3', { className: 'text-2xl text-white font-bold mb-4 flex items-center' }, [
                         React.createElement('i', { className: 'fas fa-coins text-yellow-300 mr-3' }),
-                        'Coin Packs'
+                        'Coin Packs - Pay with Pi (π)'
                     ]),
                     React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4' },
                         Object.entries(STORE_ITEMS.coinPacks).map(([key, pack]) => {
                             const isStarterPack = pack.type === 'ad';
+                            const isPiPack = pack.type === 'pi';
                             const totalCoins = pack.coins + pack.bonus;
                             
                             return React.createElement('button', {
@@ -724,7 +725,9 @@
                                 className: `${
                                     isStarterPack 
                                         ? 'bg-green-600/60 border-2 border-green-400 hover:bg-green-600/80'
-                                        : 'bg-gradient-to-b from-yellow-500/40 to-orange-500/40 border-2 border-yellow-400/60 hover:from-yellow-500/60 hover:to-orange-500/60'
+                                        : isPiPack
+                                            ? 'bg-gradient-to-b from-orange-500/40 to-yellow-500/40 border-2 border-orange-400/60 hover:from-orange-500/60 hover:to-yellow-500/60'
+                                            : 'bg-gradient-to-b from-yellow-500/40 to-orange-500/40 border-2 border-yellow-400/60 hover:from-yellow-500/60 hover:to-orange-500/60'
                                 } rounded-xl p-4 text-white transition-all duration-300 transform hover:scale-105 shadow-lg`,
                                 onClick: () => {
                                     if (isStarterPack) {
@@ -736,7 +739,10 @@
                             }, [
                                 React.createElement('div', { className: 'text-center mb-3', key: 'icon' }, 
                                     React.createElement('i', { 
-                                        className: `${pack.icon} text-3xl ${isStarterPack ? 'text-green-300' : 'text-yellow-300'}` 
+                                        className: `${pack.icon} text-3xl ${
+                                            isStarterPack ? 'text-green-300' : 
+                                            isPiPack ? 'text-orange-300' : 'text-yellow-300'
+                                        }` 
                                     })
                                 ),
                                 
@@ -755,25 +761,34 @@
                                 React.createElement('div', { className: 'text-xs text-white/80 mb-3', key: 'description' }, pack.description),
                                 
                                 React.createElement('div', { 
-                                    className: `text-lg font-bold ${isStarterPack ? 'text-green-300' : 'text-white'}`,
+                                    className: `text-lg font-bold ${
+                                        isStarterPack ? 'text-green-300' : 
+                                        isPiPack ? 'text-orange-300' : 'text-white'
+                                    }`,
                                     key: 'price'
-                                }, isStarterPack ? 'Watch Ad' : `$${pack.price}`)
+                                }, [
+                                    isStarterPack ? 'Watch Ad' : 
+                                    isPiPack ? [
+                                        React.createElement('span', { className: 'text-orange-300', key: 'pi-symbol' }, 'π '),
+                                        pack.price.toFixed(1)
+                                    ] : `π ${pack.price.toFixed(1)}`
+                                ])
                             ]);
                         })
                     )
                 ]),
                 
-                // THEMES SECTION
+                // THEMES SECTION - Pi Network
                 React.createElement('div', { className: 'mb-8', key: 'themes-section' }, [
                     React.createElement('h3', { className: 'text-2xl text-white font-bold mb-4 flex items-center' }, [
                         React.createElement('i', { className: 'fas fa-palette text-purple-300 mr-3' }),
-                        'Color Themes'
+                        'Color Themes - Pay with Pi (π)'
                     ]),
                     React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4' },
                         Object.entries(STORE_ITEMS.themes).map(([key, theme]) => {
                             const isUnlocked = userInventory.themes.includes(key);
                             const isActive = activeTheme === key;
-                            const canAfford = coins >= theme.price;
+                            const isFree = theme.type === 'free';
                             
                             return React.createElement('button', {
                                 key,
@@ -782,21 +797,26 @@
                                         ? isActive 
                                             ? 'bg-green-600/70 ring-4 ring-green-400 shadow-lg shadow-green-400/40'
                                             : 'bg-green-500/40 hover:bg-green-500/60' 
-                                        : canAfford
-                                            ? 'bg-white/20 hover:bg-white/30 border-2 border-dashed border-white/60'
-                                            : 'bg-gray-600/60 opacity-50 cursor-not-allowed'
+                                        : isFree
+                                            ? 'bg-blue-500/40 hover:bg-blue-500/60'
+                                            : 'bg-orange-500/40 hover:bg-orange-500/60 border-2 border-dashed border-orange-400/60'
                                 } rounded-xl p-4 text-white transition-all duration-300 transform hover:scale-105`,
                                 onClick: () => {
                                     if (isUnlocked) {
                                         setActiveTheme(key);
                                         window.addNotification(`${theme.name} theme activated!`, 'success');
-                                    } else if (canAfford) {
-                                        onPurchase('theme', key);
+                                    } else if (isFree) {
+                                        setActiveTheme(key);
+                                        // Automatically unlock free themes
+                                        setUserInventory(prev => ({
+                                            ...prev,
+                                            themes: [...prev.themes, key]
+                                        }));
+                                        window.addNotification(`${theme.name} theme activated!`, 'success');
                                     } else {
-                                        window.addNotification(`Need ${(theme.price - coins).toLocaleString()} more coins!`, 'error');
+                                        onPurchase('theme', key);
                                     }
-                                },
-                                disabled: !isUnlocked && !canAfford
+                                }
                             }, [
                                 React.createElement('div', { className: 'text-lg font-bold mb-2', key: 'name' }, [
                                     React.createElement('i', { className: `${theme.icon} mr-2` }),
@@ -822,8 +842,10 @@
                                 
                                 !isUnlocked ? 
                                     React.createElement('div', { className: 'flex items-center justify-center text-lg font-bold', key: 'price' }, [
-                                        React.createElement('i', { className: 'fas fa-coins text-yellow-300 mr-1' }),
-                                        theme.price.toLocaleString()
+                                        isFree ? 'FREE' : [
+                                            React.createElement('span', { className: 'text-orange-300 mr-1', key: 'pi-symbol' }, 'π'),
+                                            theme.price.toFixed(1)
+                                        ]
                                     ]) : 
                                     React.createElement('div', { className: isActive ? 'text-green-300 font-bold' : 'text-white/70', key: 'status' }, [
                                         React.createElement('i', { className: isActive ? 'fas fa-check mr-2' : 'fas fa-palette mr-2' }),
@@ -834,17 +856,17 @@
                     )
                 ]),
                 
-                // EFFECTS SECTION
+                // EFFECTS SECTION - Pi Network
                 React.createElement('div', { className: 'mb-4', key: 'effects-section' }, [
                     React.createElement('h3', { className: 'text-2xl text-white font-bold mb-4 flex items-center' }, [
                         React.createElement('i', { className: 'fas fa-magic text-pink-300 mr-3' }),
-                        'Visual Effects'
+                        'Visual Effects - Pay with Pi (π)'
                     ]),
                     React.createElement('div', { className: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4' },
                         Object.entries(STORE_ITEMS.effects).map(([key, effect]) => {
                             const isUnlocked = userInventory.effects.includes(key);
                             const isActive = activeEffect === key;
-                            const canAfford = coins >= effect.price;
+                            const isFree = effect.type === 'free';
                             
                             return React.createElement('button', {
                                 key,
@@ -853,21 +875,26 @@
                                         ? isActive 
                                             ? 'bg-green-600/70 ring-4 ring-green-400 shadow-lg shadow-green-400/40'
                                             : 'bg-green-500/40 hover:bg-green-500/60' 
-                                        : canAfford
-                                            ? 'bg-white/20 hover:bg-white/30 border-2 border-dashed border-white/60'
-                                            : 'bg-gray-600/60 opacity-50 cursor-not-allowed'
+                                        : isFree
+                                            ? 'bg-blue-500/40 hover:bg-blue-500/60'
+                                            : 'bg-orange-500/40 hover:bg-orange-500/60 border-2 border-dashed border-orange-400/60'
                                 } rounded-xl p-4 text-white transition-all duration-300 transform hover:scale-105`,
                                 onClick: () => {
                                     if (isUnlocked) {
                                         setActiveEffect(key);
                                         window.addNotification(`${effect.name} effect activated!`, 'success');
-                                    } else if (canAfford) {
-                                        onPurchase('effect', key);
+                                    } else if (isFree) {
+                                        setActiveEffect(key);
+                                        // Automatically unlock free effects
+                                        setUserInventory(prev => ({
+                                            ...prev,
+                                            effects: [...prev.effects, key]
+                                        }));
+                                        window.addNotification(`${effect.name} effect activated!`, 'success');
                                     } else {
-                                        window.addNotification(`Need ${(effect.price - coins).toLocaleString()} more coins!`, 'error');
+                                        onPurchase('effect', key);
                                     }
-                                },
-                                disabled: !isUnlocked && !canAfford
+                                }
                             }, [
                                 React.createElement('div', { className: 'text-lg font-bold mb-2', key: 'name' }, [
                                     React.createElement('i', { className: `${effect.icon} mr-2` }),
@@ -881,8 +908,10 @@
                                 
                                 !isUnlocked ? 
                                     React.createElement('div', { className: 'flex items-center justify-center text-lg font-bold', key: 'price' }, [
-                                        React.createElement('i', { className: 'fas fa-coins text-yellow-300 mr-1' }),
-                                        effect.price.toLocaleString()
+                                        isFree ? 'FREE' : [
+                                            React.createElement('span', { className: 'text-orange-300 mr-1', key: 'pi-symbol' }, 'π'),
+                                            effect.price.toFixed(1)
+                                        ]
                                     ]) : 
                                     React.createElement('div', { className: isActive ? 'text-green-300 font-bold' : 'text-white/70', key: 'status' }, [
                                         React.createElement('i', { className: isActive ? 'fas fa-check mr-2' : 'fas fa-star mr-2' }),
@@ -972,7 +1001,7 @@
             score, level, combo, points, selectedPoint, gameTime, currentDifficulty,
             activePowerups, powerupCooldowns, scoreAnimations, coinAnimations, handlePointClick,
             handlePowerup, calculateLevelUpThreshold, activeEffect, coins, levelDescription,
-            isTimerActive
+            isTimerActive, userPiBalance
         } = useContext(AppContext);
         
         return React.createElement('div', {
@@ -1114,7 +1143,7 @@
                 })
             ),
             
-            // PowerUps avec design amélioré
+            // PowerUps avec design amélioré et prix Pi
             React.createElement('div', {
                 className: 'fixed right-4 top-1/2 transform -translate-y-1/2 flex flex-col gap-3 z-30',
                 key: 'powerups'
@@ -1127,7 +1156,7 @@
                         isActive: activePowerups.includes(type),
                         onCooldown: powerupCooldowns[type],
                         onClick: () => handlePowerup(type),
-                        coins: coins
+                        userPiBalance: userPiBalance
                     })
                 )
             ),
@@ -1173,9 +1202,9 @@
         ]);
     };
 
-    // PowerupButton amélioré
-    const PowerupButton = ({ type, powerup, isActive, onCooldown, onClick, coins }) => {
-        const canAfford = coins >= powerup.price;
+    // PowerupButton amélioré avec prix Pi
+    const PowerupButton = ({ type, powerup, isActive, onCooldown, onClick, userPiBalance }) => {
+        const canAfford = userPiBalance >= powerup.price;
         
         return React.createElement('button', {
             className: `w-14 h-14 md:w-16 md:h-16 rounded-xl flex items-center justify-center touch-none select-none backdrop-blur-md shadow-lg powerup-button transition-all duration-200 ${
@@ -1185,7 +1214,7 @@
             } ${isActive ? powerup.activeClass + ' ring-4 ring-white/50' : ''} border border-white/20`,
             onClick: onClick,
             disabled: onCooldown || !canAfford,
-            title: `${powerup.effect} - Cost: ${powerup.price} coins`
+            title: `${powerup.effect} - Cost: π ${powerup.price.toFixed(3)}`
         }, [
             React.createElement('i', { 
                 className: isActive ? powerup.activeIcon : powerup.icon + ' text-xl md:text-2xl',
@@ -1207,9 +1236,9 @@
             }),
             
             !isActive && !onCooldown && React.createElement('div', {
-                className: 'powerup-price',
+                className: 'powerup-price text-orange-300 text-xs',
                 key: 'price'
-            }, powerup.price)
+            }, `π${powerup.price.toFixed(2)}`)
         ]);
     };
     
@@ -1261,7 +1290,7 @@
             React.createElement('p', {
                 className: 'text-lg text-white/70 text-center max-w-md px-4',
                 key: 'description'
-            }, 'Connect matching colors, unlock themes, and build your coin collection!'),
+            }, 'Connect matching colors and pay with Pi Network!'),
             
             // Start button
             React.createElement('button', {
@@ -1302,6 +1331,9 @@
         });
         const [activeEffect, setActiveEffect] = useState(() => {
             return Storage.get('activeEffect', 'default');
+        });
+        const [userPiBalance, setUserPiBalance] = useState(() => {
+            return Storage.get('userPiBalance', 0);
         });
 
         // UI states
@@ -1349,6 +1381,10 @@
         useEffect(() => {
             Storage.set('inventory', userInventory);
         }, [userInventory]);
+
+        useEffect(() => {
+            Storage.set('userPiBalance', userPiBalance);
+        }, [userPiBalance]);
 
         // Game timer functions - RÉPARÉ
         const startGameTimer = useCallback(() => {
@@ -1548,138 +1584,194 @@
             playSound('fail');
         };
 
-        // Handle powerup activation - RÉPARÉ
+        // Handle Pi purchase - NOUVELLE FONCTION
+        const handlePiPurchase = async (item, itemId, type) => {
+            try {
+                if (!window.piPaymentService) {
+                    window.addNotification('Pi Network service not available', 'error');
+                    return;
+                }
+
+                window.addNotification('Initiating Pi payment...', 'info');
+
+                const payment = await window.piPaymentService.createPayment(
+                    item.price, // Montant en Pi
+                    `ColorFlow Infinity - ${item.name}`, // Memo
+                    {
+                        type: type,
+                        itemId: itemId,
+                        coins: item.coins || 0,
+                        bonus: item.bonus || 0,
+                        gameData: {
+                            level: level,
+                            score: score
+                        }
+                    }
+                );
+
+                console.log('Pi payment created:', payment);
+                window.addNotification('Pi payment created! Please complete in Pi Browser.', 'success');
+                
+                return payment;
+                
+            } catch (error) {
+                console.error('Pi payment error:', error);
+                window.addNotification('Pi payment failed: ' + error.message, 'error');
+            }
+        };
+
+        // Handle powerup activation avec Pi - MODIFIÉ
         const handlePowerup = async (type) => {
             if (isPaused || powerupCooldowns[type] || activePowerups.includes(type)) return;
             
             const powerupPrice = POWERUPS[type].price;
             
-            if (coins < powerupPrice) {
+            if (userPiBalance < powerupPrice) {
                 playSound('fail');
-                window.addNotification(`Need ${(powerupPrice - coins).toLocaleString()} more coins for ${type}!`, 'error');
+                window.addNotification(`Need π ${(powerupPrice - userPiBalance).toFixed(3)} more Pi for ${type}!`, 'error');
                 return;
             }
             
-            // Déduire les coins
-            setCoins(prev => Math.max(0, prev - powerupPrice));
-            setUserInventory(prev => ({
-                ...prev,
-                coins: Math.max(0, prev.coins - powerupPrice)
-            }));
-            
-            window.addNotification(`${type} activated for ${powerupPrice.toLocaleString()} coins!`, 'success');
-            
-            // Activer le powerup
-            setActivePowerups(prev => [...prev, type]);
-            
-            playSound('powerup');
-            if (settings.vibrationEnabled && navigator.vibrate) {
-                navigator.vibrate([100, 50, 100]);
-            }
-            
-            // Apply powerup effects - CORRIGÉ
-            switch (type) {
-                case 'timeSlow':
-                    stopGameTimer();
-                    
-                    setTimeout(() => {
-                        setActivePowerups(prev => prev.filter(p => p !== type));
-                        setPowerupCooldowns(prev => ({ ...prev, [type]: true }));
-                        
-                        if (!isPaused && gameState === 'game') {
-                            startGameTimer();
-                        }
-                        
-                        setTimeout(() => {
-                            setPowerupCooldowns(prev => ({ ...prev, [type]: false }));
-                        }, POWERUPS[type].cooldown);
-                    }, POWERUPS[type].duration);
-                    break;
-                    
-                case 'magnet':
-                    const centerX = window.innerWidth / 2;
-                    const centerY = window.innerHeight / 2;
-                    
-                    setPoints(prev => prev.map(p => {
-                        const dx = centerX - p.x;
-                        const dy = centerY - p.y;
-                        const dist = Math.sqrt(dx * dx + dy * dy);
-                        const attraction = 0.6 + (dist / 2000);
-                        
-                        return {
-                            ...p,
-                            x: p.x + dx * attraction,
-                            y: p.y + dy * attraction,
-                            magnetized: true
-                        };
-                    }));
-                    
-                    setTimeout(() => {
-                        setActivePowerups(prev => prev.filter(p => p !== type));
-                        setPowerupCooldowns(prev => ({ ...prev, [type]: true }));
-                        
-                        setTimeout(() => {
-                            setPowerupCooldowns(prev => ({ ...prev, [type]: false }));
-                        }, POWERUPS[type].cooldown);
-                    }, POWERUPS[type].duration);
-                    break;
-                    
-                case 'colorBomb':
-                    setPoints(prev => {
-                        const pointsToRemove = [];
-                        const pointsToKeep = [];
-                        
-                        const shuffledPoints = [...prev].sort(() => Math.random() - 0.5);
-                        const removeCount = Math.floor(prev.length / 3);
-                        
-                        shuffledPoints.forEach((point, index) => {
-                            if (index < removeCount) {
-                                pointsToRemove.push(point);
-                            } else {
-                                pointsToKeep.push(point);
+            try {
+                // Créer paiement Pi pour le powerup
+                if (window.piPaymentService) {
+                    const payment = await window.piPaymentService.createPayment(
+                        powerupPrice,
+                        `ColorFlow Infinity - ${type} Powerup`,
+                        {
+                            type: 'powerup',
+                            powerupType: type,
+                            gameData: {
+                                level: level,
+                                score: score
                             }
-                        });
-                        
-                        const earnedPoints = pointsToRemove.reduce((total, point) => {
-                            return total + (point.isSpecial ? 100 : 50);
-                        }, 0);
-                        
-                        pointsToRemove.forEach(point => {
-                            addScoreAnimation(point.isSpecial ? 100 : 50, point.x, point.y);
-                        });
-                        
-                        setScore(prev => prev + earnedPoints);
-                        
-                        if (pointsToKeep.length < 6) {
-                            setTimeout(() => generatePoints(), 500);
                         }
-                        
-                        return pointsToKeep;
-                    });
+                    );
                     
-                    setTimeout(() => {
-                        setActivePowerups(prev => prev.filter(p => p !== type));
-                        setPowerupCooldowns(prev => ({ ...prev, [type]: true }));
+                    console.log('Powerup Pi payment created:', payment);
+                    window.addNotification(`${type} activated with Pi payment!`, 'success');
+                } else {
+                    // Fallback: déduire du solde local
+                    setUserPiBalance(prev => Math.max(0, prev - powerupPrice));
+                    window.addNotification(`${type} activated for π ${powerupPrice.toFixed(3)}!`, 'success');
+                }
+                
+                // Activer le powerup
+                setActivePowerups(prev => [...prev, type]);
+                
+                playSound('powerup');
+                if (settings.vibrationEnabled && navigator.vibrate) {
+                    navigator.vibrate([100, 50, 100]);
+                }
+                
+                // Apply powerup effects - CORRIGÉ
+                switch (type) {
+                    case 'timeSlow':
+                        stopGameTimer();
                         
                         setTimeout(() => {
-                            setPowerupCooldowns(prev => ({ ...prev, [type]: false }));
-                        }, POWERUPS[type].cooldown);
-                    }, POWERUPS[type].duration);
-                    break;
-                    
-                case 'doublePoints':
-                    window.pointsMultiplier = 3;
-                    
-                    setTimeout(() => {
-                        window.pointsMultiplier = 1;
-                        setActivePowerups(prev => prev.filter(p => p !== type));
-                        setPowerupCooldowns(prev => ({ ...prev, [type]: true }));
+                            setActivePowerups(prev => prev.filter(p => p !== type));
+                            setPowerupCooldowns(prev => ({ ...prev, [type]: true }));
+                            
+                            if (!isPaused && gameState === 'game') {
+                                startGameTimer();
+                            }
+                            
+                            setTimeout(() => {
+                                setPowerupCooldowns(prev => ({ ...prev, [type]: false }));
+                            }, POWERUPS[type].cooldown);
+                        }, POWERUPS[type].duration);
+                        break;
+                        
+                    case 'magnet':
+                        const centerX = window.innerWidth / 2;
+                        const centerY = window.innerHeight / 2;
+                        
+                        setPoints(prev => prev.map(p => {
+                            const dx = centerX - p.x;
+                            const dy = centerY - p.y;
+                            const dist = Math.sqrt(dx * dx + dy * dy);
+                            const attraction = 0.6 + (dist / 2000);
+                            
+                            return {
+                                ...p,
+                                x: p.x + dx * attraction,
+                                y: p.y + dy * attraction,
+                                magnetized: true
+                            };
+                        }));
                         
                         setTimeout(() => {
-                            setPowerupCooldowns(prev => ({ ...prev, [type]: false }));
-                        }, POWERUPS[type].cooldown);
-                    }, POWERUPS[type].duration);
-                    break;
+                            setActivePowerups(prev => prev.filter(p => p !== type));
+                            setPowerupCooldowns(prev => ({ ...prev, [type]: true }));
+                            
+                            setTimeout(() => {
+                                setPowerupCooldowns(prev => ({ ...prev, [type]: false }));
+                            }, POWERUPS[type].cooldown);
+                        }, POWERUPS[type].duration);
+                        break;
+                        
+                    case 'colorBomb':
+                        setPoints(prev => {
+                            const pointsToRemove = [];
+                            const pointsToKeep = [];
+                            
+                            const shuffledPoints = [...prev].sort(() => Math.random() - 0.5);
+                            const removeCount = Math.floor(prev.length / 3);
+                            
+                            shuffledPoints.forEach((point, index) => {
+                                if (index < removeCount) {
+                                    pointsToRemove.push(point);
+                                } else {
+                                    pointsToKeep.push(point);
+                                }
+                            });
+                            
+                            const earnedPoints = pointsToRemove.reduce((total, point) => {
+                                return total + (point.isSpecial ? 100 : 50);
+                            }, 0);
+                            
+                            pointsToRemove.forEach(point => {
+                                addScoreAnimation(point.isSpecial ? 100 : 50, point.x, point.y);
+                            });
+                            
+                            setScore(prev => prev + earnedPoints);
+                            
+                            if (pointsToKeep.length < 6) {
+                                setTimeout(() => generatePoints(), 500);
+                            }
+                            
+                            return pointsToKeep;
+                        });
+                        
+                        setTimeout(() => {
+                            setActivePowerups(prev => prev.filter(p => p !== type));
+                            setPowerupCooldowns(prev => ({ ...prev, [type]: true }));
+                            
+                            setTimeout(() => {
+                                setPowerupCooldowns(prev => ({ ...prev, [type]: false }));
+                            }, POWERUPS[type].cooldown);
+                        }, POWERUPS[type].duration);
+                        break;
+                        
+                    case 'doublePoints':
+                        window.pointsMultiplier = 3;
+                        
+                        setTimeout(() => {
+                            window.pointsMultiplier = 1;
+                            setActivePowerups(prev => prev.filter(p => p !== type));
+                            setPowerupCooldowns(prev => ({ ...prev, [type]: true }));
+                            
+                            setTimeout(() => {
+                                setPowerupCooldowns(prev => ({ ...prev, [type]: false }));
+                            }, POWERUPS[type].cooldown);
+                        }, POWERUPS[type].duration);
+                        break;
+                }
+                
+            } catch (error) {
+                console.error('Powerup activation error:', error);
+                window.addNotification('Powerup activation failed: ' + error.message, 'error');
             }
         };
 
@@ -1743,84 +1835,59 @@
             window.addNotification(`Game Over! +${earnedCoins.toLocaleString()} coins`, 'info');
         };
 
-        // Handle store purchases - RÉPARÉ
-        const handlePurchase = (type, itemId) => {
+        // Handle store purchases - MODIFIÉ pour Pi Network
+        const handlePurchase = async (type, itemId) => {
             try {
                 console.log(`Attempting to purchase ${type}: ${itemId}`);
                 
-                let price = 0;
                 let item = null;
                 
                 switch (type) {
                     case 'coinPack':
                         item = STORE_ITEMS.coinPacks[itemId];
-                        if (item.type === 'purchase') {
-                            // Simulation d'achat réel - en production, intégrer vrais paiements
-                            window.addNotification('Real purchases not implemented in demo', 'info');
-                            return;
+                        if (item.type === 'pi') {
+                            return await handlePiPurchase(item, itemId, 'coins');
+                        } else if (item.type === 'ad') {
+                            return handleWatchAd(item);
                         }
                         break;
                         
                     case 'theme':
                         item = STORE_ITEMS.themes[itemId];
-                        price = item?.price || 0;
+                        if (item.type === 'pi') {
+                            return await handlePiPurchase(item, itemId, 'theme');
+                        } else if (item.type === 'free') {
+                            // Déverrouiller gratuitement
+                            setUserInventory(prev => ({
+                                ...prev,
+                                themes: [...prev.themes, itemId]
+                            }));
+                            setActiveTheme(itemId);
+                            window.addNotification(`${item.name} theme unlocked!`, 'success');
+                            return;
+                        }
                         break;
                         
                     case 'effect':
                         item = STORE_ITEMS.effects[itemId];
-                        price = item?.price || 0;
+                        if (item.type === 'pi') {
+                            return await handlePiPurchase(item, itemId, 'effect');
+                        } else if (item.type === 'free') {
+                            // Déverrouiller gratuitement
+                            setUserInventory(prev => ({
+                                ...prev,
+                                effects: [...prev.effects, itemId]
+                            }));
+                            setActiveEffect(itemId);
+                            window.addNotification(`${item.name} effect unlocked!`, 'success');
+                            return;
+                        }
                         break;
                         
                     default:
                         window.addNotification('Invalid purchase type!', 'error');
                         return;
                 }
-                
-                if (!item) {
-                    window.addNotification('Item not found!', 'error');
-                    return;
-                }
-                
-                if (coins < price) {
-                    window.addNotification(`Need ${(price - coins).toLocaleString()} more coins!`, 'error');
-                    playSound('fail');
-                    return;
-                }
-                
-                // Check if already owned
-                const inventoryKey = type === 'theme' ? 'themes' : 'effects';
-                if (userInventory[inventoryKey].includes(itemId)) {
-                    window.addNotification('Already owned!', 'error');
-                    return;
-                }
-                
-                // Deduct coins
-                const newCoins = Math.max(0, coins - price);
-                setCoins(newCoins);
-                
-                // Update inventory
-                setUserInventory(prev => {
-                    const newInventory = {
-                        ...prev,
-                        coins: newCoins,
-                        [inventoryKey]: [...prev[inventoryKey], itemId]
-                    };
-                    
-                    console.log('Updated inventory:', newInventory);
-                    return newInventory;
-                });
-                
-                // Activate immediately
-                if (type === 'theme') {
-                    setActiveTheme(itemId);
-                } else if (type === 'effect') {
-                    setActiveEffect(itemId);
-                }
-                
-                playSound('achievement');
-                window.addNotification(`${item.name} unlocked and activated!`, 'success');
-                
-                console.log(`Purchase successful: ${type} ${itemId} for ${price.toLocaleString()} coins`);
                 
             } catch (error) {
                 console.error('Purchase error:', error);
@@ -2007,6 +2074,7 @@
             activeTheme,
             activeEffect,
             levelDescription,
+            userPiBalance,
             
             handlePointClick,
             handlePowerup,
@@ -2022,6 +2090,50 @@
         window.setGameState = setGameState;
         window.resetGame = resetGame;
         window.handleGameRestart = handleGameRestart;
+        window.setUserPiBalance = setUserPiBalance;
+
+        // Test Pi transaction function
+        window.testPiTransaction = async function() {
+            try {
+                console.log('Testing Pi Network transaction...');
+                
+                if (!window.piPaymentService) {
+                    console.error('Pi Payment Service not available');
+                    return { success: false, error: 'Pi service not initialized' };
+                }
+
+                // Test avec le pack small
+                const testItem = STORE_ITEMS.coinPacks.small;
+                
+                const payment = await window.piPaymentService.createPayment(
+                    0.1, // Test avec 0.1 Pi
+                    'ColorFlow Infinity - Test Transaction',
+                    {
+                        type: 'test',
+                        itemId: 'test_transaction',
+                        coins: 100,
+                        testMode: true
+                    }
+                );
+
+                console.log('Test Pi payment created successfully:', payment);
+                
+                if (typeof window.addNotification === 'function') {
+                    window.addNotification('Test Pi transaction initiated! Check Pi Browser.', 'success');
+                }
+                
+                return { success: true, payment: payment };
+                
+            } catch (error) {
+                console.error('Test Pi transaction failed:', error);
+                
+                if (typeof window.addNotification === 'function') {
+                    window.addNotification('Test transaction failed: ' + error.message, 'error');
+                }
+                
+                return { success: false, error: error.message };
+            }
+        };
 
         // Cleanup timer on unmount
         useEffect(() => {
@@ -2084,19 +2196,31 @@
                         }
                     }),
                     
-                    // Coins display avec ouverture store
+                    // Coins display avec ouverture store + Pi Balance
                     React.createElement('div', {
-                        className: 'fixed top-4 right-24 flex items-center bg-black/50 backdrop-blur-md rounded-xl px-4 py-3 text-white z-30 border border-yellow-400/50 shadow-lg',
+                        className: 'fixed top-4 right-24 flex flex-col gap-2 z-30',
                         key: 'balance-display'
                     }, [
+                        // Coins balance
                         React.createElement('div', {
-                            className: 'flex items-center cursor-pointer hover:bg-white/10 rounded-lg px-3 py-2 transition-all duration-200 transform hover:scale-105',
+                            className: 'flex items-center bg-black/50 backdrop-blur-md rounded-xl px-4 py-3 text-white border border-yellow-400/50 shadow-lg cursor-pointer hover:bg-black/60 transition-all duration-200 transform hover:scale-105',
                             onClick: handleOpenStore,
-                            title: 'Open Store'
+                            title: 'Open Pi Network Store',
+                            key: 'coins-balance'
                         }, [
                             React.createElement('i', { className: 'fas fa-coins text-yellow-300 mr-2 text-xl' }),
                             React.createElement('span', { className: 'font-bold text-lg' }, coins.toLocaleString()),
                             React.createElement('i', { className: 'fas fa-store ml-3 text-sm opacity-70' })
+                        ]),
+                        
+                        // Pi balance
+                        React.createElement('div', {
+                            className: 'flex items-center bg-black/50 backdrop-blur-md rounded-xl px-4 py-2 text-white border border-orange-400/50 shadow-lg',
+                            title: 'Pi Network Balance',
+                            key: 'pi-balance'
+                        }, [
+                            React.createElement('span', { className: 'text-orange-300 mr-1 font-bold text-lg' }, 'π'),
+                            React.createElement('span', { className: 'font-bold text-sm' }, userPiBalance.toFixed(3))
                         ])
                     ]),
                     
@@ -2109,6 +2233,16 @@
                             stopGameTimer();
                         }
                     }),
+                    
+                    // Test Pi Button (development only)
+                    process.env.NODE_ENV === 'development' && React.createElement('button', {
+                        key: 'test-pi-button',
+                        className: 'fixed bottom-4 right-4 px-4 py-2 bg-orange-500 hover:bg-orange-600 rounded-lg text-white font-bold transition-colors z-30 text-sm',
+                        onClick: () => window.testPiTransaction()
+                    }, [
+                        React.createElement('span', { className: 'text-orange-300 mr-1' }, 'π'),
+                        'Test Transaction'
+                    ]),
                     
                     // Modals
                     showSettings && React.createElement(SettingsModal, {
@@ -2137,6 +2271,7 @@
                         onClose: handleCloseStore,
                         coins,
                         onPurchase: handlePurchase,
+                        onWatchAd: handleWatchAd,
                         activeTheme,
                         setActiveTheme,
                         activeEffect,
@@ -2165,5 +2300,137 @@
         ]);
     };
     
-    console.log("ColorFlow Game successfully defined - Version finale complète");
+    // Storage utility for compatibility
+    const Storage = {
+        get: function(key, defaultValue) {
+            try {
+                const value = localStorage.getItem('colorflow_' + key);
+                return value ? JSON.parse(value) : defaultValue;
+            } catch (e) {
+                console.error("LocalStorage error:", e);
+                return defaultValue;
+            }
+        },
+        
+        set: function(key, value) {
+            try {
+                localStorage.setItem('colorflow_' + key, JSON.stringify(value));
+                return true;
+            } catch (e) {
+                console.error("LocalStorage error:", e);
+                return false;
+            }
+        }
+    };
+
+    // Pi Payment Service Integration Callbacks
+    if (window.piPaymentService) {
+        // Override payment completion callback to handle game purchases
+        const originalOnPaymentCompleted = window.piPaymentService.onPaymentCompleted;
+        window.piPaymentService.onPaymentCompleted = function(payment) {
+            console.log('Pi payment completed in game:', payment);
+            
+            try {
+                const metadata = payment.metadata || {};
+                
+                switch (metadata.type) {
+                    case 'coins':
+                        if (typeof window.setCoins === 'function' && typeof window.setUserInventory === 'function') {
+                            const totalCoins = (metadata.coins || 0) + (metadata.bonus || 0);
+                            
+                            window.setCoins(prev => prev + totalCoins);
+                            window.setUserInventory(prev => ({
+                                ...prev,
+                                coins: prev.coins + totalCoins
+                            }));
+                            
+                            if (typeof window.addNotification === 'function') {
+                                window.addNotification(`+${totalCoins.toLocaleString()} coins purchased with Pi!`, 'success');
+                            }
+                        }
+                        break;
+                        
+                    case 'theme':
+                        if (typeof window.setUserInventory === 'function') {
+                            window.setUserInventory(prev => ({
+                                ...prev,
+                                themes: [...prev.themes, metadata.itemId]
+                            }));
+                            
+                            if (typeof window.addNotification === 'function') {
+                                window.addNotification(`Theme unlocked with Pi payment!`, 'success');
+                            }
+                        }
+                        break;
+                        
+                    case 'effect':
+                        if (typeof window.setUserInventory === 'function') {
+                            window.setUserInventory(prev => ({
+                                ...prev,
+                                effects: [...prev.effects, metadata.itemId]
+                            }));
+                            
+                            if (typeof window.addNotification === 'function') {
+                                window.addNotification(`Effect unlocked with Pi payment!`, 'success');
+                            }
+                        }
+                        break;
+                        
+                    case 'powerup':
+                        // Powerup already activated, just confirm
+                        if (typeof window.addNotification === 'function') {
+                            window.addNotification(`${metadata.powerupType} powerup activated with Pi!`, 'success');
+                        }
+                        break;
+                        
+                    case 'test':
+                        if (typeof window.addNotification === 'function') {
+                            window.addNotification('Pi Network test transaction completed successfully! 🎉', 'success');
+                        }
+                        break;
+                }
+                
+                // Update Pi balance if tracking locally
+                if (typeof window.setUserPiBalance === 'function') {
+                    const amount = parseFloat(payment.amount || 0);
+                    window.setUserPiBalance(prev => Math.max(0, prev - amount));
+                }
+                
+            } catch (error) {
+                console.error('Error processing Pi payment completion:', error);
+            }
+            
+            // Call original callback if it exists
+            if (originalOnPaymentCompleted) {
+                originalOnPaymentCompleted.call(this, payment);
+            }
+        };
+    }
+    
+    console.log("ColorFlow Game with Pi Network integration successfully defined - Version finale complète");
+    
+    // Global functions for Pi integration testing
+    window.addTestPiBalance = function(amount = 10.0) {
+        if (typeof window.setUserPiBalance === 'function') {
+            window.setUserPiBalance(prev => prev + amount);
+            console.log(`Added π ${amount} to test balance`);
+            if (typeof window.addNotification === 'function') {
+                window.addNotification(`Test: Added π ${amount} to balance`, 'info');
+            }
+        }
+    };
+    
+    window.checkPiIntegration = function() {
+        console.log('Pi Network Integration Status:');
+        console.log('============================');
+        console.log('Pi SDK loaded:', typeof Pi !== 'undefined');
+        console.log('Pi Payment Service:', !!window.piPaymentService);
+        console.log('Pi Payment Service initialized:', window.piPaymentService?.isInitialized);
+        console.log('User Pi Balance:', window.Storage?.get('userPiBalance', 0));
+        console.log('Store Items with Pi:', Object.values(STORE_ITEMS.coinPacks).filter(item => item.type === 'pi').length);
+        console.log('Themes with Pi:', Object.values(STORE_ITEMS.themes).filter(item => item.type === 'pi').length);
+        console.log('Effects with Pi:', Object.values(STORE_ITEMS.effects).filter(item => item.type === 'pi').length);
+        console.log('Powerups with Pi:', Object.values(POWERUPS).filter(item => item.price > 0).length);
+    };
+
 })();
