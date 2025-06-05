@@ -1,70 +1,28 @@
 {
-  "name": "colorflow-infinity-pi",
+  "name": "colorflow-infinity",
   "version": "1.0.0",
   "description": "ColorFlow Infinity - A color-matching puzzle game powered by Pi Network",
-  "main": "index.html",
+  "main": "public/index.html",
   "scripts": {
-    "dev": "npx vercel dev",
-    "build": "mkdir -p public && cp index.html public/ && cp -r js public/ && mkdir -p public/assets/sounds public/assets/images && touch public/assets/sounds/click.mp3 public/assets/sounds/connect.mp3 public/assets/sounds/levelup.mp3 public/assets/sounds/powerup.mp3 public/assets/sounds/achievement.mp3 public/assets/sounds/intro.mp3 public/assets/sounds/background.mp3 public/assets/sounds/fail.mp3 public/assets/images/studio-intro.mp4 && echo 'Build completed successfully!'",
-    "build:simple": "mkdir -p assets/sounds assets/images && touch assets/sounds/click.mp3 assets/sounds/connect.mp3 assets/sounds/levelup.mp3 assets/sounds/powerup.mp3 assets/sounds/achievement.mp3 assets/sounds/intro.mp3 assets/sounds/background.mp3 assets/sounds/fail.mp3 assets/images/studio-intro.mp4 && echo 'Simple build completed!'",
-    "start": "npx http-server . -p 3000 -c-1",
-    "start:vercel": "npx vercel dev",
-    "deploy": "npm run build && npx vercel --prod",
-    "deploy:simple": "npm run build:simple && npx vercel --prod",
-    "preview": "npm run build && npx vercel",
-    "lint": "echo 'Linting JavaScript files...'",
-    "test": "echo 'Running tests...'",
-    "clean": "rm -rf .vercel public assets",
-    "install-vercel": "npm install -g vercel"
+    "build": "mkdir -p public/assets/sounds public/assets/images && touch public/assets/sounds/click.mp3 public/assets/sounds/connect.mp3 public/assets/sounds/levelup.mp3 public/assets/sounds/powerup.mp3 public/assets/sounds/achievement.mp3 public/assets/sounds/intro.mp3 public/assets/sounds/background.mp3 public/assets/sounds/fail.mp3 public/assets/images/studio-intro.mp4 && echo 'Build completed successfully!'",
+    "build:simple": "echo 'Static build completed - files already in public/'",
+    "dev": "npx http-server public -p 3000 -c-1",
+    "start": "npx http-server public -p 3000 -c-1"
   },
   "keywords": [
     "game",
     "puzzle",
     "pi-network",
     "blockchain",
-    "react",
     "javascript",
     "web-game",
     "color-matching"
   ],
-  "author": {
-    "name": "ColorFlow Infinity Team",
-    "email": "contact@colorflow-infinity.com",
-    "url": "https://colorflow-infinity.vercel.app"
-  },
+  "author": "ColorFlow Infinity Team",
   "license": "MIT",
+  "homepage": "https://colorflowinfinity.pw",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/colorflow-infinity-pi.git"
-  },
-  "bugs": {
-    "url": "https://github.com/yourusername/colorflow-infinity-pi/issues"
-  },
-  "homepage": "https://colorflow-infinity.vercel.app",
-  "devDependencies": {
-    "@vercel/node": "^3.0.0",
-    "http-server": "^14.1.1"
-  },
-  "dependencies": {
-    "vercel": "^32.0.0"
-  },
-  "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=8.0.0"
-  },
-  "browserslist": [
-    "> 1%",
-    "last 2 versions",
-    "not dead",
-    "not ie 11"
-  ],
-  "pi-network": {
-    "app-id": "your_pi_app_id_here",
-    "version": "2.0",
-    "features": [
-      "payments",
-      "ads",
-      "auth"
-    ]
+    "url": "https://github.com/Volgat/colorflow-infinity.git"
   }
 }
