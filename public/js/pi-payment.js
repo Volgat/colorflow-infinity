@@ -1,4 +1,4 @@
-// Pi Network Payment Service for ColorFlow Infinity
+// Pi Network Payment Service for ColorFlow Infinity - FIXED with proper scopes
 // This file handles all Pi Network payment operations
 
 (function() {
@@ -38,7 +38,7 @@
             this.userBalance = this.loadUserBalance();
         }
 
-        // Initialize the Pi Payment Service
+        // Initialize the Pi Payment Service avec les scopes requis
         async init() {
             try {
                 if (typeof Pi === 'undefined') {
@@ -47,29 +47,62 @@
                     return { success: true, message: 'Development mode initialized' };
                 }
 
-                // Initialize Pi SDK with payment capabilities
+                console.log('Initializing Pi SDK with payments scope...');
+
+                // Initialize Pi SDK with payment capabilities et scopes requis
                 await Pi.init({
                     version: "2.0",
-                    sandbox: PI_CONFIG.environment === 'sandbox'
+                    sandbox: PI_CONFIG.environment === 'sandbox',
+                    scopes: ['payments'] // AJOUT DU SCOPE PAYMENTS REQUIS
                 });
 
                 this.isInitialized = true;
-                console.log('Pi Payment Service initialized successfully');
+                console.log('✅ Pi Payment Service initialized successfully with payments scope');
                 
                 // Check for any pending payments
                 await this.checkPendingPayments();
                 
-                return { success: true, message: 'Pi Payment Service initialized' };
+                return { success: true, message: 'Pi Payment Service initialized with payments scope' };
             } catch (error) {
-                console.error('Pi Payment Service initialization error:', error);
+                console.error('❌ Pi Payment Service initialization error:', error);
                 return { success: false, error: error.message };
             }
         }
 
-        // Create a new Pi payment
+        // Authenticate user for payments (nouvelle méthode)
+        async authenticateUser() {
+            try {
+                if (typeof Pi === 'undefined') {
+                    console.log('Pi SDK not available - skipping authentication');
+                    return { success: true, message: 'Development mode - no auth needed' };
+                }
+
+                console.log('Authenticating user for Pi payments...');
+                
+                // Authenticate user with payments scope
+                const authResult = await Pi.authenticate(['payments'], function(scopes) {
+                    // User approved access to scopes
+                    console.log('User approved scopes:', scopes);
+                    return scopes.indexOf('payments') >= 0;
+                });
+
+                console.log('✅ Pi Network authentication result:', authResult);
+                return { success: true, authResult };
+
+            } catch (error) {
+                console.error('❌ Pi authentication error:', error);
+                return { success: false, error: error.message };
+            }
+        }
+
+        // Create a new Pi payment avec authentification
         async createPayment(amount, memo, metadata = {}) {
             if (!this.isInitialized) {
-                throw new Error('Pi Payment Service not initialized');
+                console.log('Pi service not initialized, initializing now...');
+                const initResult = await this.init();
+                if (!initResult.success) {
+                    throw new Error('Failed to initialize Pi service: ' + initResult.error);
+                }
             }
 
             try {
@@ -78,12 +111,20 @@
                 
                 if (typeof Pi === 'undefined') {
                     // Development mode - simulate payment
+                    console.log('Development mode - simulating Pi payment');
                     return this.simulatePayment(paymentId, amount, memo, metadata);
                 }
 
                 // Validate payment amount
                 if (amount <= 0) {
                     throw new Error('Payment amount must be greater than 0');
+                }
+
+                // Authenticate user before creating payment
+                console.log('Authenticating user for payment...');
+                const authResult = await this.authenticateUser();
+                if (!authResult.success) {
+                    throw new Error('Authentication failed: ' + authResult.error);
                 }
 
                 // Prepare payment data
@@ -98,31 +139,31 @@
                     }
                 };
 
-                console.log('Creating Pi payment:', paymentData);
+                console.log('Creating Pi payment with data:', paymentData);
 
                 // Create Pi payment
                 const payment = await Pi.createPayment(paymentData, {
                     // Called when the payment is ready for server approval
                     onReadyForServerApproval: (paymentId) => {
-                        console.log('Payment ready for server approval:', paymentId);
+                        console.log('💰 Payment ready for server approval:', paymentId);
                         this.handleServerApproval(paymentId);
                     },
                     
                     // Called when the payment is ready for server completion
                     onReadyForServerCompletion: (paymentId, txid) => {
-                        console.log('Payment ready for completion:', paymentId, txid);
+                        console.log('✅ Payment ready for completion:', paymentId, txid);
                         this.handleServerCompletion(paymentId, txid);
                     },
                     
                     // Called when payment is cancelled
                     onCancel: (paymentId) => {
-                        console.log('Payment cancelled:', paymentId);
+                        console.log('❌ Payment cancelled:', paymentId);
                         this.handlePaymentCancellation(paymentId);
                     },
                     
                     // Called when payment encounters an error
                     onError: (error, payment) => {
-                        console.error('Payment error:', error, payment);
+                        console.error('💥 Payment error:', error, payment);
                         this.handlePaymentError(error, payment);
                     }
                 });
@@ -130,16 +171,17 @@
                 // Store pending payment
                 this.storePendingPayment(payment);
                 
+                console.log('✅ Pi payment created successfully:', payment);
                 return payment;
             } catch (error) {
-                console.error('Failed to create Pi payment:', error);
+                console.error('❌ Failed to create Pi payment:', error);
                 throw error;
             }
         }
 
         // Simulate payment for development mode
         simulatePayment(paymentId, amount, memo, metadata) {
-            console.log('Simulating Pi payment:', { paymentId, amount, memo, metadata });
+            console.log('🧪 Simulating Pi payment:', { paymentId, amount, memo, metadata });
             
             const simulatedPayment = {
                 identifier: paymentId,
@@ -154,6 +196,11 @@
 
             // Store as pending
             this.storePendingPayment(simulatedPayment);
+
+            // Show notification
+            if (typeof window.addNotification === 'function') {
+                window.addNotification('🧪 Simulating Pi payment... (3 seconds)', 'info');
+            }
 
             // Simulate payment completion after 3 seconds
             setTimeout(() => {
@@ -180,7 +227,7 @@
                 // Trigger payment completion callback
                 this.onPaymentCompleted(payment);
                 
-                console.log('Simulated payment completed:', payment);
+                console.log('✅ Simulated payment completed:', payment);
             }
         }
 
@@ -189,7 +236,7 @@
             try {
                 // In a real app, you would make an API call to your backend
                 // to approve the payment on the server side
-                console.log('Handling server approval for payment:', paymentId);
+                console.log('🔄 Handling server approval for payment:', paymentId);
                 
                 // For this demo, we'll auto-approve
                 // In production, implement proper server-side verification
@@ -201,11 +248,15 @@
                     payment.status = PAYMENT_STATUS.APPROVED;
                     payment.approved_at = new Date().toISOString();
                     this.updatePendingPayment(payment);
+                    
+                    if (typeof window.addNotification === 'function') {
+                        window.addNotification('💰 Payment approved by server!', 'success');
+                    }
                 }
                 
                 return { approved: true };
             } catch (error) {
-                console.error('Server approval error:', error);
+                console.error('❌ Server approval error:', error);
                 return { approved: false, error: error.message };
             }
         }
@@ -213,7 +264,7 @@
         // Handle server completion step
         async handleServerCompletion(paymentId, txid) {
             try {
-                console.log('Handling server completion for payment:', paymentId, txid);
+                console.log('✅ Handling server completion for payment:', paymentId, txid);
                 
                 const pendingPayments = this.loadPendingPayments();
                 const payment = pendingPayments.find(p => p.identifier === paymentId);
@@ -229,18 +280,22 @@
                     
                     // Trigger completion callback
                     this.onPaymentCompleted(payment);
+                    
+                    if (typeof window.addNotification === 'function') {
+                        window.addNotification('🎉 Payment completed successfully!', 'success');
+                    }
                 }
                 
                 return { completed: true };
             } catch (error) {
-                console.error('Server completion error:', error);
+                console.error('❌ Server completion error:', error);
                 return { completed: false, error: error.message };
             }
         }
 
         // Handle payment cancellation
         handlePaymentCancellation(paymentId) {
-            console.log('Payment cancelled:', paymentId);
+            console.log('❌ Payment cancelled:', paymentId);
             
             const pendingPayments = this.loadPendingPayments();
             const payment = pendingPayments.find(p => p.identifier === paymentId);
@@ -257,7 +312,7 @@
 
         // Handle payment error
         handlePaymentError(error, payment) {
-            console.error('Payment error:', error, payment);
+            console.error('💥 Payment error:', error, payment);
             
             if (payment && payment.identifier) {
                 const pendingPayments = this.loadPendingPayments();
@@ -284,7 +339,7 @@
                     if (typeof Pi !== 'undefined') {
                         // Check payment status with Pi Network
                         // In a real implementation, you would query the Pi API
-                        console.log('Checking status for payment:', payment.identifier);
+                        console.log('🔍 Checking status for payment:', payment.identifier);
                     }
                 } catch (error) {
                     console.error('Error checking payment status:', error);
@@ -294,7 +349,7 @@
 
         // Payment completion callback
         onPaymentCompleted(payment) {
-            console.log('Payment completed successfully:', payment);
+            console.log('🎉 Payment completed successfully:', payment);
             
             // Update user's Pi balance if tracking locally
             this.updateUserBalance(payment);
@@ -304,25 +359,25 @@
             
             // Show success notification
             if (typeof window.addNotification === 'function') {
-                window.addNotification('Payment completed successfully!', 'success');
+                window.addNotification('🎉 Pi payment completed successfully!', 'success');
             }
         }
 
         // Payment cancellation callback
         onPaymentCancelled(payment) {
-            console.log('Payment was cancelled:', payment);
+            console.log('❌ Payment was cancelled:', payment);
             
             if (typeof window.addNotification === 'function') {
-                window.addNotification('Payment was cancelled', 'info');
+                window.addNotification('❌ Pi payment was cancelled', 'info');
             }
         }
 
         // Payment failure callback
         onPaymentFailed(payment, error) {
-            console.error('Payment failed:', payment, error);
+            console.error('💥 Payment failed:', payment, error);
             
             if (typeof window.addNotification === 'function') {
-                window.addNotification('Payment failed: ' + (error.message || error), 'error');
+                window.addNotification('💥 Pi payment failed: ' + (error.message || error), 'error');
             }
         }
 
@@ -357,7 +412,7 @@
 
         // Process powerup purchase
         processPowerupPurchase(payment, metadata) {
-            console.log('Processing powerup purchase:', metadata.powerupType);
+            console.log('⚡ Processing powerup purchase:', metadata.powerupType);
             // The powerup activation is handled in the main game logic
         }
 
@@ -374,7 +429,7 @@
                 
                 window.setCoins(prev => prev + totalCoins);
                 
-                console.log(`Added ${totalCoins} coins to user account`);
+                console.log(`💰 Added ${totalCoins} coins to user account`);
             }
         }
 
@@ -386,7 +441,7 @@
                     themes: [...prev.themes, metadata.itemId]
                 }));
                 
-                console.log(`Unlocked theme: ${metadata.itemId}`);
+                console.log(`🎨 Unlocked theme: ${metadata.itemId}`);
             }
         }
 
@@ -398,7 +453,7 @@
                     effects: [...prev.effects, metadata.itemId]
                 }));
                 
-                console.log(`Unlocked effect: ${metadata.itemId}`);
+                console.log(`✨ Unlocked effect: ${metadata.itemId}`);
             }
         }
 
@@ -410,7 +465,7 @@
                     premium: true
                 }));
                 
-                console.log('Activated premium features');
+                console.log('👑 Activated premium features');
             }
         }
 
@@ -536,6 +591,23 @@
                 console.error('Error cleaning up payment history:', error);
             }
         }
+
+        // Test connection to Pi Network (nouvelle méthode)
+        async testConnection() {
+            try {
+                if (typeof Pi === 'undefined') {
+                    return { connected: false, message: 'Pi SDK not available' };
+                }
+
+                const authResult = await this.authenticateUser();
+                return { 
+                    connected: authResult.success, 
+                    message: authResult.success ? 'Connected to Pi Network' : authResult.error 
+                };
+            } catch (error) {
+                return { connected: false, message: error.message };
+            }
+        }
     }
 
     // Create global instance
@@ -544,10 +616,18 @@
     // Initialize when DOM is ready
     document.addEventListener('DOMContentLoaded', async () => {
         try {
+            console.log('🚀 Initializing Pi Payment Service...');
             await window.piPaymentService.init();
-            console.log('Pi Payment Service ready');
+            console.log('✅ Pi Payment Service ready');
+            
+            // Test connection after initialization
+            setTimeout(async () => {
+                const connectionTest = await window.piPaymentService.testConnection();
+                console.log('🔗 Pi Network connection test:', connectionTest);
+            }, 1000);
+            
         } catch (error) {
-            console.error('Failed to initialize Pi Payment Service:', error);
+            console.error('❌ Failed to initialize Pi Payment Service:', error);
         }
     });
 
@@ -555,5 +635,7 @@
     if (typeof module !== 'undefined' && module.exports) {
         module.exports = PiPaymentService;
     }
+
+    console.log('💜 Pi Payment Service with scopes loaded successfully');
 
 })();
