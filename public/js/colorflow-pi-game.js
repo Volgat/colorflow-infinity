@@ -2235,7 +2235,7 @@
                     }),
                     
                     // Test Pi Button (development only)
-                    process.env.NODE_ENV === 'development' && React.createElement('button', {
+                    (window.location.hostname === 'localhost' || window.location.hostname.includes('localhost') || window.location.search.includes('debug=true')) && React.createElement('button', {
                         key: 'test-pi-button',
                         className: 'fixed bottom-4 right-4 px-4 py-2 bg-orange-500 hover:bg-orange-600 rounded-lg text-white font-bold transition-colors z-30 text-sm',
                         onClick: () => window.testPiTransaction()
@@ -2322,6 +2322,9 @@
             }
         }
     };
+
+    // Expose Storage globally for compatibility
+    window.Storage = Storage;
 
     // Pi Payment Service Integration Callbacks
     if (window.piPaymentService) {
@@ -2426,7 +2429,7 @@
         console.log('Pi SDK loaded:', typeof Pi !== 'undefined');
         console.log('Pi Payment Service:', !!window.piPaymentService);
         console.log('Pi Payment Service initialized:', window.piPaymentService?.isInitialized);
-        console.log('User Pi Balance:', window.Storage?.get('userPiBalance', 0));
+        console.log('User Pi Balance:', Storage.get('userPiBalance', 0));
         console.log('Store Items with Pi:', Object.values(STORE_ITEMS.coinPacks).filter(item => item.type === 'pi').length);
         console.log('Themes with Pi:', Object.values(STORE_ITEMS.themes).filter(item => item.type === 'pi').length);
         console.log('Effects with Pi:', Object.values(STORE_ITEMS.effects).filter(item => item.type === 'pi').length);

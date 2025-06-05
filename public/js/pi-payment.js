@@ -4,13 +4,14 @@
 (function() {
     'use strict';
     
-    // Pi Payment Configuration
+    // Pi Payment Configuration - Configuration côté client
     const PI_CONFIG = {
-        // These will be replaced with your actual Pi Network app credentials
-        apiKey: process.env.PI_API_KEY || 'your_pi_api_key_here',
-        appId: process.env.PI_APP_ID || 'your_pi_app_id_here',
-        environment: process.env.NODE_ENV === 'production' ? 'production' : 'sandbox',
-        walletAddress: process.env.PI_WALLET_ADDRESS || 'your_pi_wallet_address'
+        // Ces valeurs seront configurées via les variables d'environnement Vercel
+        // ou via des constantes par défaut pour le développement
+        apiKey: 'your_pi_api_key_here', // Sera remplacé par la vraie clé via backend
+        appId: 'your_pi_app_id_here',
+        environment: 'sandbox', // Par défaut en sandbox pour le développement
+        walletAddress: 'your_pi_wallet_address'
     };
 
     // Payment transaction statuses
@@ -302,8 +303,8 @@
             this.processPurchase(payment);
             
             // Show success notification
-            if (typeof addNotification === 'function') {
-                addNotification('Payment completed successfully!', 'success');
+            if (typeof window.addNotification === 'function') {
+                window.addNotification('Payment completed successfully!', 'success');
             }
         }
 
@@ -311,8 +312,8 @@
         onPaymentCancelled(payment) {
             console.log('Payment was cancelled:', payment);
             
-            if (typeof addNotification === 'function') {
-                addNotification('Payment was cancelled', 'info');
+            if (typeof window.addNotification === 'function') {
+                window.addNotification('Payment was cancelled', 'info');
             }
         }
 
@@ -320,8 +321,8 @@
         onPaymentFailed(payment, error) {
             console.error('Payment failed:', payment, error);
             
-            if (typeof addNotification === 'function') {
-                addNotification('Payment failed: ' + (error.message || error), 'error');
+            if (typeof window.addNotification === 'function') {
+                window.addNotification('Payment failed: ' + (error.message || error), 'error');
             }
         }
 
@@ -362,9 +363,9 @@
 
         // Process coins purchase
         processCoinsPurchase(payment, metadata) {
-            const pack = window.STORE_ITEMS?.piCoins?.[metadata.itemId];
+            const pack = window.STORE_ITEMS?.coinPacks?.[metadata.itemId];
             if (pack && typeof window.setUserInventory === 'function' && typeof window.setCoins === 'function') {
-                const totalCoins = pack.amount + pack.bonus;
+                const totalCoins = pack.coins + pack.bonus;
                 
                 window.setUserInventory(prev => ({
                     ...prev,
