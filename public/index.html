@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ColorFlow Infinity - By AmeGameStudio</title>
+    
+    <!-- Styles -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- React and dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/17.0.2/umd/react.production.min.js" crossorigin></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/17.0.2/umd/react-dom.production.min.js" crossorigin></script>
+
+    <style>
+        body { margin: 0; padding: 0; overflow: hidden; background: #1a1a2e; }
+        #introContainer { 
+            position: fixed; 
+            inset: 0; 
+            background: black;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: opacity 0.5s ease;
+        }
+        #gameContainer {
+            position: fixed;
+            inset: 0;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            z-index: 100;
+        }
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        @keyframes score-float {
+            0% { opacity: 0; transform: translateY(0); }
+            20% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { opacity: 0; transform: translateY(-50px); }
+        }
+        .animate-score {
+            animation: score-float 1s forwards;
+        }
+        .animate-pulse {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        @keyframes orbit {
+            0% { transform: rotate(0deg) translateX(120px) rotate(0deg); }
+            100% { transform: rotate(360deg) translateX(120px) rotate(-360deg); }
+        }
+        .animate-orbit {
+            animation: orbit 20s linear infinite;
+        }
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+        @keyframes cooldown {
+            from { height: 100%; }
+            to { height: 0%; }
+        }
+        
+        /* Error screen */
+        .error-screen {
+            color: white; 
+            text-align: center; 
+            padding: 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 12px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .error-screen button {
+            padding: 10px 20px; 
+            background: linear-gradient(to right, #9333ea, #ec4899); 
+            color: white; 
+            border: none; 
+            border-radius: 5px; 
+            margin-top: 20px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .error-screen button:hover {
+            background: linear-gradient(to right, #a545ff, #ff5aaf);
+        }
+        
+        /* Bouton d'activation audio */
+        #enable-audio-button {
+            position: fixed;
+            top: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(to right, #9333ea, #ec4899);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 9999;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+        }
+        #enable-audio-button:hover {
+            transform: translateX(-50%) scale(1.05);
+        }
+        
+        /* Styled Home button */
+        .home-button {
+            position: fixed;
+            top: 4rem;
+            right: 4rem;
+            width: 3rem;
+            height: 3rem;
+            background-color: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(8px);
+            color: white;
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 30;
+            transition: all 0.2s;
+        }
+        
+        .home-button:hover {
+            transform: scale(1.1);
+            background-color: rgba(168, 85, 247, 0.5);
+        }
+        
+        .home-button:active {
+            transform: scale(0.95);
+        }
+        
+        /* Confirmation modal */
+        .confirm-modal {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+        
+        .confirm-box {
+            background: linear-gradient(to right, #9333ea, #ec4899);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            max-width: 20rem;
+            width: 100%;
+            text-align: center;
+            color: white;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        
+        .button-group button {
+            flex: 1;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        
+        .button-group button:hover {
+            transform: scale(1.05);
+        }
+        
+        .button-group button:active {
+            transform: scale(0.95);
+        }
+        
+        .confirm-button {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+        
+        .cancel-button {
+            background-color: rgba(0, 0, 0, 0.3);
+            color: white;
+        }
+        
+        /* Store modal improvements */
+        .store-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            padding: 1rem;
+            background: linear-gradient(to right, rgba(147, 51, 234, 0.9), rgba(236, 72, 153, 0.9));
+            backdrop-filter: blur(4px);
+            margin: -1.5rem -1.5rem 1rem -1.5rem;
+            border-radius: 1rem 1rem 0 0;
+        }
+        
+        .store-close-button {
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 9999px;
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        
+        .store-close-button:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Enhanced time freeze effect */
+        .time-freeze-effect {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 500;
+            background: linear-gradient(rgba(173, 216, 230, 0.1), rgba(173, 216, 230, 0.3));
+            backdrop-filter: blur(2px) hue-rotate(180deg);
+        }
+
+        .time-freeze-counter {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 8rem;
+            font-weight: bold;
+            color: rgba(255, 255, 255, 0.8);
+            text-shadow: 0 0 20px #00a2ff, 0 0 40px #00a2ff;
+            z-index: 501;
+            pointer-events: none;
+        }
+
+        /* Enhanced explosion effect */
+        .bomb-effect {
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,0,0,1) 0%, rgba(255,165,0,0.8) 50%, rgba(255,255,0,0.5) 100%);
+            transform: translate(-50%, -50%) scale(0);
+            opacity: 1;
+            transition: transform 0.8s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.8s ease-out;
+            pointer-events: none;
+            z-index: 1000;
+            box-shadow: 0 0 100px 50px rgba(255, 0, 0, 0.8);
+        }
+
+        .bomb-particle {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #ff5500;
+            box-shadow: 0 0 10px 5px rgba(255, 85, 0, 0.6);
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        /* Points with magnet effect */
+        .magnetized-point {
+            filter: brightness(1.8) drop-shadow(0 0 15px currentColor);
+            transition: all 0.3s ease;
+            transform-origin: center;
+            animation: pulse-magnetic 1s infinite alternate;
+        }
+
+        @keyframes pulse-magnetic {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.3); }
+        }
+
+        /* Enhanced points multiplier */
+        .points-multiplier-effect {
+            position: fixed;
+            top: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 6rem;
+            font-weight: bold;
+            color: #ffdd00;
+            text-shadow: 0 0 15px #ff8800, 0 0 30px #ff5500;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            z-index: 1000;
+            pointer-events: none;
+            animation: pulse-3x 2s infinite;
+        }
+
+        @keyframes pulse-3x {
+            0%, 100% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.2); }
+        }
+
+        /* Enhanced connection effect for double points */
+        .doublepoints-line {
+            stroke-width: 8px !important;
+            filter: drop-shadow(0 0 10px currentColor) !important;
+            stroke-dasharray: 20 !important;
+            stroke-dashoffset: 1000 !important;
+            animation: dash 3s linear infinite !important;
+        }
+
+        @keyframes dash {
+            to { stroke-dashoffset: 0; }
+        }
+        
+        /* Notifications */
+        .game-notification {
+            position: fixed;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-20px);
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            font-weight: bold;
+            opacity: 0;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            z-index: 2000;
+        }
+        
+        .game-notification.error {
+            background-color: rgba(220, 38, 38, 0.8);
+        }
+        
+        .game-notification.success {
+            background-color: rgba(16, 185, 129, 0.8);
+        }
+        
+        /* Powerup button visual improvements */
+        .powerup-button {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .powerup-button:before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 70%);
+            opacity: 0;
+            transform: scale(0.5);
+            transition: opacity 0.3s, transform 0.3s;
+        }
+        
+        .powerup-button:hover:before {
+            opacity: 1;
+            transform: scale(1);
+        }
+        
+        .powerup-price {
+            position: absolute;
+            bottom: -5px;
+            right: -5px;
+            background: rgba(0,0,0,0.7);
+            color: #FFD700;
+            border-radius: 50%;
+            font-size: 10px;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Store container improvements */
+        @media (max-width: 768px) {
+            .store-container {
+                max-height: 75vh;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Video container -->
+    <div id="introContainer">
+        <div class="loading-spinner" id="loadingSpinner"></div>
+        <video 
+            id="introVideo"
+            style="max-width: 300px; display: none;"
+            playsinline
+            muted
+            autoplay
+        ></video>
+    </div>
+
+    <!-- Game container -->
+    <div id="gameContainer">
+        <div id="root"></div>
+    </div>
+    
+    <!-- Configuration and utilities -->
+    <script>
+        // Global error handler
+        window.addEventListener('error', function(event) {
+            console.error('Global error:', event.error);
+            
+            if (event.error && event.error.message && (
+                event.error.message.includes('React') || 
+                event.error.message.includes('Framer') ||
+                event.error.message.includes('motion')
+            )) {
+                console.log('Attempting recovery...');
+                
+                if (document.getElementById('root')) {
+                    document.getElementById('root').innerHTML = `
+                        <div class="error-screen">
+                            <h2>An error occurred</h2>
+                            <p>The game will restart automatically in 5 seconds...</p>
+                            <button onclick="location.reload()">Restart Now</button>
+                        </div>
+                    `;
+                    
+                    setTimeout(() => {
+                        location.reload();
+                    }, 5000);
+                }
+            }
+        });
+        
+        // Global configuration
+        window.gameConfig = {
+            basePath: '/assets/',
+            videoPath: '/assets/images/studio-intro.mp4',
+            sounds: {
+                click: '/assets/sounds/click.mp3',
+                connect: '/assets/sounds/connect.mp3',
+                levelUp: '/assets/sounds/levelup.mp3',
+                powerup: '/assets/sounds/powerup.mp3',
+                achievement: '/assets/sounds/achievement.mp3',
+                intro: '/assets/sounds/intro.mp3',
+                background: '/assets/sounds/background.mp3',
+                fail: '/assets/sounds/fail.mp3'
+            }
+        };
+
+        // Initialize global points multiplier
+        window.pointsMultiplier = 1;
+
+        // Framer Motion lightweight implementation
+        window.FramerMotion = window.Motion = {
+            motion: {},
+            AnimatePresence: function(props) {
+                return props.children || React.createElement('div', null);
+            }
+        };
+
+        // Create motion components
+        const componentTypes = ['div', 'button', 'span', 'p', 'h1', 'h2', 'svg', 'path', 'circle'];
+        componentTypes.forEach(type => {
+            window.FramerMotion.motion[type] = function(props) {
+                const safeProps = {...props};
+                
+                ['initial', 'animate', 'exit', 'transition', 'whileHover', 'whileTap'].forEach(prop => {
+                    delete safeProps[prop];
+                });
+                
+                return React.createElement(type, safeProps);
+            };
+        });
+
+        console.log('Framer Motion fallback initialized');
+
+        // Audio state and settings
+        window.audioContext = null;
+        window.backgroundMusic = null;
+        window.audioSettings = {
+            volume: 0.5,
+            isMuted: false,
+            musicEnabled: true,
+            vibrationEnabled: true
+        };
+
+        // Audio functions
+        window.playSound = function(type) {
+            if (window.audioSettings.isMuted) return;
+            
+            try {
+                if (!window.gameConfig.sounds[type]) {
+                    console.warn(`Sound type '${type}' not defined`);
+                    return;
+                }
+                
+                const audio = new Audio(window.gameConfig.sounds[type]);
+                audio.volume = window.audioSettings.volume;
+                
+                const playPromise = audio.play();
+                
+                if (playPromise !== undefined) {
+                    playPromise.catch(e => {
+                        console.warn(`Cannot play sound ${type}:`, e);
+                        
+                        if (e.name === 'NotAllowedError' && type !== 'click') {
+                            console.info("Audio cannot be played automatically before user interaction");
+                            
+                            if (!window._audioUserInteractionRequired) {
+                                window._audioUserInteractionRequired = true;
+                                addAudioEnableButton();
+                            }
+                        }
+                    });
+                }
+            } catch (e) {
+                console.error(`Sound error ${type}:`, e);
+            }
+        };
+
+        window.playBackgroundMusic = function() {
+            if (window.audioSettings.isMuted || !window.audioSettings.musicEnabled) return;
+            
+            try {
+                if (!window.backgroundMusic) {
+                    window.backgroundMusic = new Audio(window.gameConfig.sounds.background);
+                    window.backgroundMusic.loop = true;
+                    window.backgroundMusic.volume = window.audioSettings.volume * 0.3;
+                }
+                
+                const playPromise = window.backgroundMusic.play();
+                
+                if (playPromise !== undefined) {
+                    playPromise.catch(e => {
+                        console.warn("Background music error:", e);
+                        
+                        if (e.name === 'NotAllowedError') {
+                            console.info("Audio cannot be played automatically before user interaction");
+                            
+                            if (!window._audioUserInteractionRequired) {
+                                window._audioUserInteractionRequired = true;
+                                addAudioEnableButton();
+                            }
+                        }
+                    });
+                }
+            } catch (e) {
+                console.error("Background music error:", e);
+            }
+        };
+
+        function addAudioEnableButton() {
+            if (document.getElementById('enable-audio-button')) return;
+            
+            const button = document.createElement('button');
+            button.id = 'enable-audio-button';
+            button.textContent = '🔊 Enable Music';
+            
+            button.addEventListener('click', () => {
+                const unlockSound = new Audio(window.gameConfig.sounds.click);
+                unlockSound.volume = window.audioSettings.volume;
+                unlockSound.play().then(() => {
+                    console.log("Audio unlocked successfully");
+                    window.playBackgroundMusic();
+                    button.remove();
+                }).catch(e => {
+                    console.warn("Audio unlock failed", e);
+                });
+            });
+            
+            document.body.appendChild(button);
+            
+            setTimeout(() => {
+                if (document.getElementById('enable-audio-button')) {
+                    button.style.opacity = '0';
+                    setTimeout(() => button.remove(), 500);
+                }
+            }, 10000);
+        }
+
+        function stopBackgroundMusic() {
+            try {
+                if (window.backgroundMusic) {
+                    window.backgroundMusic.pause();
+                    window.backgroundMusic.currentTime = 0;
+                }
+            } catch (e) {
+                console.error("Error stopping music:", e);
+            }
+        }
+
+        // LocalStorage management
+        const Storage = {
+            get: function(key, defaultValue) {
+                try {
+                    const value = localStorage.getItem('colorflow_' + key);
+                    return value ? JSON.parse(value) : defaultValue;
+                } catch (e) {
+                    console.error("LocalStorage error:", e);
+                    return defaultValue;
+                }
+            },
+            
+            set: function(key, value) {
+                try {
+                    localStorage.setItem('colorflow_' + key, JSON.stringify(value));
+                    return true;
+                } catch (e) {
+                    console.error("LocalStorage error:", e);
+                    return false;
+                }
+            }
+        };
+
+        // Load intro video
+        function loadIntroVideo() {
+            console.log('Loading intro video');
+            return new Promise((resolve) => {
+                const video = document.getElementById('introVideo');
+                const loadingSpinner = document.getElementById('loadingSpinner');
+                
+                video.src = window.gameConfig.videoPath;
+                console.log(`Video source set: ${video.src}`);
+                
+                video.onloadedmetadata = () => {
+                    console.log('Video metadata loaded');
+                    loadingSpinner.style.display = 'none';
+                    video.style.display = 'block';
+                };
+                
+                video.oncanplaythrough = () => {
+                    console.log('Video ready to play');
+                    resolve(video);
+                };
+                
+                video.onerror = () => {
+                    console.warn(`Error loading video`);
+                    resolve(video);
+                };
+                
+                setTimeout(() => {
+                    if (video.readyState < 3) {
+                        console.warn('Video timeout, forced continuation');
+                        resolve(video);
+                    }
+                }, 5000);
+            });
+        }
+
+        // Main initialization
+        async function init() {
+            try {
+                const video = await loadIntroVideo();
+                
+                function startGame() {
+                    document.getElementById('introContainer').style.opacity = '0';
+                    setTimeout(() => {
+                        document.getElementById('introContainer').style.display = 'none';
+                        document.getElementById('gameContainer').style.opacity = '1';
+                        
+                        if (typeof window.ColorFlowApp === 'function') {
+                            try {
+                                ReactDOM.render(
+                                    React.createElement(window.ColorFlowApp),
+                                    document.getElementById('root')
+                                );
+                            } catch (error) {
+                                console.error("Error rendering application:", error);
+                                document.getElementById('root').innerHTML = `
+                                    <div class="error-screen">
+                                        <h2>An error occurred while loading the game</h2>
+                                        <p>Please refresh the page or contact support.</p>
+                                        <button onclick="location.reload()">Refresh Page</button>
+                                    </div>
+                                `;
+                            }
+                        } else {
+                            console.error("ColorFlowApp component not defined");
+                            document.getElementById('root').innerHTML = `
+                                <div class="error-screen">
+                                    <h2>Game could not load properly</h2>
+                                    <p>Please refresh the page or contact support.</p>
+                                    <button onclick="location.reload()">Refresh Page</button>
+                                </div>
+                            `;
+                        }
+                    }, 500);
+                }
+
+                if (video) {
+                    video.addEventListener('ended', () => {
+                        console.log('Video finished, starting game');
+                        startGame();
+                    });
+                    
+                    setTimeout(() => {
+                        if (video.paused || video.ended || video.readyState < 3) {
+                            console.log('Forced game start (video not played)');
+                            startGame();
+                        }
+                    }, 8000);
+                }
+            } catch (error) {
+                console.error("Initialization error:", error);
+                startGameImmediately();
+            }
+        }
+
+        // Immediate start in case of error
+        function startGameImmediately() {
+            document.getElementById('introContainer').style.display = 'none';
+            document.getElementById('gameContainer').style.opacity = '1';
+            
+            if (typeof window.ColorFlowApp === 'function') {
+                try {
+                    ReactDOM.render(
+                        React.createElement(window.ColorFlowApp),
+                        document.getElementById('root')
+                    );
+                } catch (error) {
+                    console.error("Error rendering application:", error);
+                    document.getElementById('root').innerHTML = `
+                        <div class="error-screen">
+                            <h2>An error occurred while loading the game</h2>
+                            <p>Please refresh the page or contact support.</p>
+                            <button onclick="location.reload()">Refresh Page</button>
+                        </div>
+                    `;
+                }
+            } else {
+                console.error("ColorFlowApp component not defined");
+                document.getElementById('root').innerHTML = `
+                    <div class="error-screen">
+                        <h2>Game could not load properly</h2>
+                        <p>Please refresh the page or contact support.</p>
+                        <button onclick="location.reload()">Refresh Page</button>
+                    </div>
+                `;
+            }
+        }
+
+        // Pause/Resume functions
+        function pauseGame() {
+            if (typeof setIsPaused === 'function') {
+                setIsPaused(true);
+            }
+        }
+
+        function resumeGame() {
+            if (typeof setIsPaused === 'function') {
+                setIsPaused(false);
+            }
+        }
+
+        window.pauseGame = pauseGame;
+        window.resumeGame = resumeGame;
+
+        // Start initialization when document is ready
+        if (document.readyState === "loading") {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+        
+        // Function to add notification
+        function addNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `game-notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.transform = 'translateY(0)';
+                notification.style.opacity = '1';
+                
+                setTimeout(() => {
+                    notification.style.transform = 'translateY(-20px)';
+                    notification.style.opacity = '0';
+                    
+                    setTimeout(() => {
+                        if (notification && notification.parentNode && notification.parentNode.contains(notification)) {
+                            notification.parentNode.removeChild(notification);
+                        }
+                    }, 500);
+                }, 2000);
+            }, 10);
+        }
+        
+        // Make addNotification globally available
+        window.addNotification = addNotification;
+    </script>
+
+    <!-- AI Service with Gemini API -->
+    <script src="js/ai-service.js"></script>
+
+    <!-- ColorFlow Game Implementation -->
+    <script src="js/colorflow-pi-game.js"></script>
+</body>
+</html>
