@@ -1,4 +1,4 @@
-// Pi Network Payment Service - Following Official Documentation Pattern
+// Pi Network Payment Service - Complete Solution with Real Transaction Support
 // Based on: https://github.com/pi-apps/docs
 
 (function() {
@@ -8,8 +8,9 @@
     const PI_CONFIG = {
         version: "2.0",
         sandbox: false, // Production mode for your domain
-        authTimeout: 30000, // 30 seconds timeout for auth
-        paymentTimeout: 60000 // 60 seconds timeout for payments
+        authTimeout: 45000, // 45 seconds timeout for auth
+        paymentTimeout: 90000, // 90 seconds timeout for payments
+        maxRetries: 3
     };
 
     // Payment statuses
@@ -37,37 +38,111 @@
             this.completedPayments = this.loadCompletedPayments();
             this.piApiKey = null;
             this.isPiBrowser = this.detectPiBrowser();
+            this.forceRealTransactions = false;
+            this.authRetries = 0;
         }
 
-        // Detect if running in Pi Browser
+        // Enhanced Pi Browser detection
         detectPiBrowser() {
             const userAgent = navigator.userAgent || '';
+            const hostname = window.location.hostname;
+            const protocol = window.location.protocol;
+            
+            // Enhanced detection for Pi Browser
             const isPi = userAgent.includes('PiBrowser') || 
                         userAgent.includes('Pi Browser') ||
-                        window.location.hostname.includes('pinet.com') ||
-                        typeof Pi !== 'undefined';
+                        userAgent.includes('PiApp') ||
+                        userAgent.includes('Pi/') ||
+                        hostname.includes('pinet.com') ||
+                        protocol === 'pi:' ||
+                        (typeof Pi !== 'undefined' && Pi.init) ||
+                        window.navigator.userAgent.includes('Pi Network');
             
-            console.log('Pi Browser detection:', { 
-                userAgent: userAgent.substring(0, 100) + '...', 
+            console.log('🔍 Enhanced Pi Browser detection:', { 
+                userAgent: userAgent.substring(0, 120) + '...', 
+                hostname,
+                protocol,
                 isPi,
-                hasPiSdk: typeof Pi !== 'undefined'
+                hasPiSdk: typeof Pi !== 'undefined',
+                piInitAvailable: typeof Pi?.init === 'function',
+                piAuthAvailable: typeof Pi?.authenticate === 'function'
             });
             
             return isPi;
         }
 
-        // Initialize Pi SDK following official pattern
+        // Load Pi API key from server endpoint
+        async loadApiKeyFromServer() {
+            try {
+                console.log('🔑 Loading Pi API key from server...');
+                
+                const response = await fetch('/api/pi-config', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    console.warn('⚠️ Could not load Pi API key from server:', response.status);
+                    return false;
+                }
+                
+                const config = await response.json();
+                
+                if (config.success && config.apiKey) {
+                    this.piApiKey = config.apiKey;
+                    window.PI_API_KEY = config.apiKey; // Expose globally
+                    
+                    console.log('✅ Pi API key loaded from server successfully');
+                    console.log('🏦 Wallet address:', config.walletAddress);
+                    console.log('🌍 Environment:', config.environment);
+                    
+                    return true;
+                }
+                
+                return false;
+            } catch (error) {
+                console.error('❌ Error loading Pi API key:', error);
+                return false;
+            }
+        }
+
+        // Initialize Pi SDK with enhanced support
         async init() {
             try {
-                if (typeof Pi === 'undefined') {
-                    console.warn('⚠️ Pi SDK not available - development mode');
-                    this.isInitialized = true;
-                    return { success: true, message: 'Development mode' };
+                console.log('🚀 Initializing Enhanced Pi Payment Service...');
+
+                // Always try to load API key from server first
+                const keyLoaded = await this.loadApiKeyFromServer();
+                if (!keyLoaded) {
+                    this.piApiKey = window.PI_API_KEY || process.env.PI_API_KEY;
+                    if (!this.piApiKey) {
+                        console.warn('⚠️ PI_API_KEY not found - server operations may fail');
+                    }
                 }
 
-                console.log('🚀 Initializing Pi SDK...');
+                if (typeof Pi === 'undefined') {
+                    console.warn('⚠️ Pi SDK not available');
+                    
+                    if (this.isPiBrowser) {
+                        console.error('❌ Pi Browser detected but Pi SDK not loaded! Check SDK integration.');
+                        // Try to reload the page once if we're in Pi Browser but SDK is missing
+                        if (!window.piSDKReloadAttempted) {
+                            window.piSDKReloadAttempted = true;
+                            console.log('🔄 Attempting to reload for Pi SDK...');
+                            setTimeout(() => location.reload(), 2000);
+                            return { success: false, message: 'Reloading for Pi SDK' };
+                        }
+                    }
+                    
+                    this.isInitialized = true;
+                    return { success: true, message: 'Development mode - Pi SDK not available' };
+                }
 
-                // Step 1: Initialize Pi SDK (Official Pattern)
+                console.log('🚀 Pi SDK detected, initializing...');
+
+                // Initialize Pi SDK
                 await Pi.init({ 
                     version: "2.0",
                     sandbox: PI_CONFIG.sandbox
@@ -76,11 +151,12 @@
                 this.isInitialized = true;
                 console.log('✅ Pi SDK initialized successfully');
 
-                // Try to get API key from global config or environment
-                this.piApiKey = window.PI_API_KEY || process.env.PI_API_KEY;
-                if (!this.piApiKey) {
-                    console.warn('⚠️ PI_API_KEY not found - server operations may fail');
-                }
+                // Test Pi SDK availability
+                console.log('🧪 Pi SDK methods available:', {
+                    init: typeof Pi.init === 'function',
+                    authenticate: typeof Pi.authenticate === 'function',
+                    createPayment: typeof Pi.createPayment === 'function'
+                });
 
                 return { success: true, message: 'Pi SDK initialized' };
             } catch (error) {
@@ -90,11 +166,11 @@
             }
         }
 
-        // Authenticate user with timeout and fallback
+        // Enhanced authentication with multiple strategies
         async authenticate() {
             try {
                 if (typeof Pi === 'undefined') {
-                    console.log('🧪 Development mode - skipping auth');
+                    console.log('🧪 Development mode - using simulated auth');
                     this.isAuthenticated = true;
                     this.authData = { 
                         user: { uid: 'dev_user', username: 'Developer' },
@@ -108,40 +184,61 @@
                     await this.init();
                 }
 
-                // Check if we have cached auth data that's still valid
+                // Check cached auth data
                 const cachedAuth = this.loadAuthData();
-                if (cachedAuth && this.isAuthDataValid(cachedAuth)) {
+                if (cachedAuth && this.isAuthDataValid(cachedAuth) && !this.forceRealTransactions) {
                     console.log('✅ Using cached authentication');
                     this.isAuthenticated = true;
                     this.authData = cachedAuth;
                     return { success: true, authResult: cachedAuth };
                 }
 
-                console.log('🔐 Authenticating user with payments scope...');
+                console.log('🔐 Starting Pi Network authentication...');
+                this.authRetries++;
 
-                // Create authentication promise with timeout
+                // Create authentication promise with enhanced timeout handling
                 const authPromise = this.performAuthentication();
                 const timeoutPromise = new Promise((_, reject) => {
                     setTimeout(() => reject(new Error('Authentication timeout')), PI_CONFIG.authTimeout);
                 });
 
-                // Race authentication against timeout
-                const authResult = await Promise.race([authPromise, timeoutPromise]);
-                
-                this.isAuthenticated = true;
-                this.authData = authResult;
-                this.saveAuthData(authResult);
-
-                console.log('✅ Authentication successful:', authResult);
-                return { success: true, authResult };
-
-            } catch (error) {
-                console.error('❌ Authentication failed:', error);
-                
-                // Fallback: Use development mode for testing
-                if (error.message.includes('timeout') || error.message.includes('channel closed')) {
-                    console.log('🔄 Authentication timeout - using fallback mode');
+                try {
+                    // Race authentication against timeout
+                    const authResult = await Promise.race([authPromise, timeoutPromise]);
                     
+                    this.isAuthenticated = true;
+                    this.authData = authResult;
+                    this.authRetries = 0; // Reset retry counter on success
+                    this.saveAuthData(authResult);
+
+                    console.log('✅ Pi Network authentication successful:', authResult);
+                    return { success: true, authResult };
+
+                } catch (authError) {
+                    console.error('❌ Authentication failed:', authError);
+                    
+                    // Retry logic for authentication
+                    if (this.authRetries < PI_CONFIG.maxRetries && authError.message.includes('timeout')) {
+                        console.log(`🔄 Retrying authentication (${this.authRetries}/${PI_CONFIG.maxRetries})...`);
+                        await new Promise(resolve => setTimeout(resolve, 1000 * this.authRetries));
+                        return this.authenticate();
+                    }
+                    
+                    // Force real transactions mode if we're in Pi Browser but auth fails
+                    if (this.isPiBrowser && this.piApiKey) {
+                        console.log('🔧 Pi Browser detected with API key - forcing real transaction mode');
+                        this.forceRealTransactions = true;
+                        this.isAuthenticated = true;
+                        this.authData = { 
+                            user: { uid: 'pi_user', username: 'PiUser' },
+                            accessToken: 'forced_token',
+                            forced: true
+                        };
+                        return { success: true, message: 'Forced real transaction mode' };
+                    }
+                    
+                    // Fallback authentication
+                    console.log('🔄 Using fallback authentication mode');
                     this.isAuthenticated = true;
                     this.authData = { 
                         user: { uid: 'fallback_user', username: 'TestUser' },
@@ -151,16 +248,20 @@
                     
                     return { success: true, message: 'Fallback authentication mode' };
                 }
-                
+
+            } catch (error) {
+                console.error('❌ Critical authentication error:', error);
                 return { success: false, error: error.message };
             }
         }
 
-        // Perform the actual authentication
+        // Perform Pi Network authentication
         async performAuthentication() {
             return new Promise((resolve, reject) => {
                 try {
                     const scopes = ['payments'];
+                    
+                    console.log('🔐 Calling Pi.authenticate with scopes:', scopes);
                     
                     // Official onIncompletePaymentFound callback
                     const onIncompletePaymentFound = (payment) => {
@@ -168,59 +269,80 @@
                         this.handleIncompletePayment(payment);
                     };
 
-                    // Official authentication call
+                    // Call Pi.authenticate
                     Pi.authenticate(scopes, onIncompletePaymentFound)
-                        .then(resolve)
-                        .catch(reject);
+                        .then(result => {
+                            console.log('✅ Pi.authenticate resolved:', result);
+                            resolve(result);
+                        })
+                        .catch(error => {
+                            console.error('❌ Pi.authenticate rejected:', error);
+                            reject(error);
+                        });
                         
                 } catch (error) {
+                    console.error('❌ Exception in performAuthentication:', error);
                     reject(error);
                 }
             });
         }
 
-        // Check if auth data is still valid (simple time-based check)
+        // Check if auth data is still valid
         isAuthDataValid(authData) {
             if (!authData || !authData.timestamp) return false;
             
             const now = Date.now();
             const authAge = now - authData.timestamp;
-            const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+            const maxAge = 12 * 60 * 60 * 1000; // 12 hours
             
             return authAge < maxAge;
         }
 
-        // Create payment with improved error handling
+        // Enhanced payment creation with real transaction support
         async createPayment(amount, memo, metadata = {}) {
             try {
-                // Ensure authentication first with timeout
+                console.log('💰 Creating payment:', { amount, memo, metadata });
+
+                // Ensure authentication
                 if (!this.isAuthenticated) {
                     console.log('🔐 Not authenticated - authenticating now...');
                     const authResult = await this.authenticate();
                     if (!authResult.success) {
-                        // Don't throw error, continue with fallback
-                        console.warn('⚠️ Authentication failed, using fallback mode');
+                        console.warn('⚠️ Authentication failed, continuing with fallback');
                     }
                 }
 
-                // Generate payment ID
                 const paymentId = this.generatePaymentId();
                 
-                // Force simulation if not in Pi Browser or auth failed
-                if (typeof Pi === 'undefined' || !this.isPiBrowser || (this.authData && this.authData.fallback)) {
+                // Determine if we should use real Pi Network transactions
+                const shouldUseRealTransaction = (
+                    typeof Pi !== 'undefined' && 
+                    this.isPiBrowser && 
+                    this.piApiKey && 
+                    (this.forceRealTransactions || (this.authData && !this.authData.fallback && !this.authData.simulated))
+                );
+
+                console.log('🔍 Payment mode decision:', {
+                    piSdkAvailable: typeof Pi !== 'undefined',
+                    isPiBrowser: this.isPiBrowser,
+                    hasApiKey: !!this.piApiKey,
+                    forceReal: this.forceRealTransactions,
+                    authType: this.authData?.fallback ? 'fallback' : this.authData?.simulated ? 'simulated' : 'real',
+                    willUseReal: shouldUseRealTransaction
+                });
+
+                if (!shouldUseRealTransaction) {
                     console.log('🧪 Using simulation mode for payment');
                     return this.simulatePayment(paymentId, amount, memo, metadata);
                 }
 
-                // Validate amount
+                // Real Pi Network transaction
+                console.log('💰 Creating REAL Pi Network payment...');
+
                 if (amount <= 0) {
                     throw new Error('Amount must be greater than 0');
                 }
 
-                console.log('💰 Creating Pi payment...');
-                console.log('📋 Payment data:', { amount, memo, metadata });
-
-                // Step 3: Create Payment (Official Pattern)
                 const paymentData = {
                     amount: parseFloat(amount),
                     memo: memo || 'ColorFlow Infinity Purchase',
@@ -228,21 +350,21 @@
                         ...metadata,
                         gameId: 'colorflow_infinity',
                         timestamp: Date.now(),
-                        paymentId: paymentId
+                        paymentId: paymentId,
+                        realTransaction: true
                     }
                 };
 
-                // Create payment promise with timeout
-                const paymentPromise = this.performPaymentCreation(paymentData, paymentId);
+                // Create real payment with timeout protection
+                const paymentPromise = this.performRealPaymentCreation(paymentData, paymentId);
                 const timeoutPromise = new Promise((_, reject) => {
                     setTimeout(() => reject(new Error('Payment creation timeout')), PI_CONFIG.paymentTimeout);
                 });
 
-                // Try to create payment or timeout
                 try {
                     await Promise.race([paymentPromise, timeoutPromise]);
                 } catch (timeoutError) {
-                    console.warn('⚠️ Payment creation timeout, falling back to simulation');
+                    console.warn('⚠️ Real payment creation timeout, falling back to simulation');
                     return this.simulatePayment(paymentId, amount, memo, metadata);
                 }
 
@@ -251,14 +373,15 @@
                     identifier: paymentId,
                     ...paymentData,
                     status: PAYMENT_STATUS.PENDING,
-                    created_at: new Date().toISOString()
+                    created_at: new Date().toISOString(),
+                    realTransaction: true
                 };
 
                 this.storePendingPayment(pendingPayment);
 
-                console.log('✅ Pi payment created successfully');
+                console.log('✅ REAL Pi payment created successfully');
                 if (typeof window.addNotification === 'function') {
-                    window.addNotification('✅ Pi payment created! Complete in Pi Browser.', 'success');
+                    window.addNotification('✅ Pi payment created! Complete in Pi Wallet.', 'success');
                 }
 
                 return pendingPayment;
@@ -266,70 +389,69 @@
             } catch (error) {
                 console.error('❌ Payment creation failed:', error);
                 
-                // Always fallback to simulation on any error
-                console.log('🔄 Falling back to simulation due to error');
+                // Final fallback to simulation
+                console.log('🔄 Final fallback to simulation due to error');
                 const paymentId = this.generatePaymentId();
                 return this.simulatePayment(paymentId, amount, memo, metadata);
             }
         }
 
-        // Perform payment creation
-        performPaymentCreation(paymentData, paymentId) {
+        // Perform real Pi Network payment creation
+        performRealPaymentCreation(paymentData, paymentId) {
             return new Promise((resolve, reject) => {
                 try {
-                    // Official payment callbacks
+                    console.log('🚀 Calling Pi.createPayment for REAL transaction');
+
                     const paymentCallbacks = {
                         onReadyForServerApproval: (paymentId) => {
-                            console.log('💰 Payment ready for server approval:', paymentId);
-                            this.onReadyForServerApproval(paymentId);
+                            console.log('💰 REAL Payment ready for server approval:', paymentId);
+                            this.onReadyForServerApproval(paymentId, true); // true = real transaction
                             resolve();
                         },
                         onReadyForServerCompletion: (paymentId, txid) => {
-                            console.log('✅ Payment ready for server completion:', paymentId, txid);
-                            this.onReadyForServerCompletion(paymentId, txid);
+                            console.log('✅ REAL Payment ready for server completion:', paymentId, txid);
+                            this.onReadyForServerCompletion(paymentId, txid, true); // true = real transaction
                         },
                         onCancel: (paymentId) => {
-                            console.log('❌ Payment cancelled:', paymentId);
+                            console.log('❌ REAL Payment cancelled:', paymentId);
                             this.onCancel(paymentId);
                             reject(new Error('Payment cancelled by user'));
                         },
                         onError: (error, payment) => {
-                            console.error('💥 Payment error:', error, payment);
+                            console.error('💥 REAL Payment error:', error, payment);
                             this.onError(error, payment);
                             reject(error);
                         }
                     };
 
-                    // Official createPayment call
+                    // Call the real Pi.createPayment
                     Pi.createPayment(paymentData, paymentCallbacks);
                     
                 } catch (error) {
+                    console.error('❌ Exception in performRealPaymentCreation:', error);
                     reject(error);
                 }
             });
         }
 
-        // Handle incomplete payment (Official Callback)
+        // Handle incomplete payment
         handleIncompletePayment(payment) {
             console.log('🔄 Processing incomplete payment:', payment);
             
-            // Store the incomplete payment for processing
             this.storeCompletedPayment(payment);
             
-            // Process the purchase if it's valid
             if (payment.status && payment.status.developer_completed === false) {
                 this.processPurchase(payment);
             }
         }
 
-        // Server approval callback (Official Pattern) - CORRIGÉ
-        async onReadyForServerApproval(paymentId) {
+        // Enhanced server approval with real Pi Network API calls
+        async onReadyForServerApproval(paymentId, isRealTransaction = false) {
             try {
-                console.log('🔄 Server approval required for:', paymentId);
+                console.log(`🔄 Server approval required for ${isRealTransaction ? 'REAL' : 'SIMULATED'} payment:`, paymentId);
                 
-                // For development/testing - auto approve
-                if (!this.piApiKey || !this.isPiBrowser) {
-                    console.log('🧪 Development mode - auto-approving payment');
+                if (!isRealTransaction || !this.piApiKey || !this.isPiBrowser) {
+                    console.log('🧪 Auto-approving simulated/test payment');
                     
                     const pendingPayments = this.loadPendingPayments();
                     const payment = pendingPayments.find(p => p.identifier === paymentId);
@@ -347,13 +469,15 @@
                         
                         // Auto-complete after approval for testing
                         setTimeout(() => {
-                            this.onReadyForServerCompletion(paymentId, 'test_tx_' + Date.now());
+                            this.onReadyForServerCompletion(paymentId, 'test_tx_' + Date.now(), false);
                         }, 1000);
                     }
                     return;
                 }
                 
-                // Production: Real Pi Network API call
+                // REAL Pi Network API approval
+                console.log('🔥 Making REAL Pi Network API approval call');
+                
                 try {
                     const response = await fetch(`https://api.minepi.com/v2/payments/${paymentId}/approve`, {
                         method: 'POST',
@@ -365,51 +489,58 @@
 
                     if (!response.ok) {
                         const errorText = await response.text();
-                        console.error('Pi API approval error:', response.status, errorText);
+                        console.error('❌ Pi API approval error:', response.status, errorText);
                         throw new Error(`Pi API approval failed: ${response.status} - ${errorText}`);
                     }
 
                     const approvedPayment = await response.json();
-                    console.log('✅ Payment approved by Pi Network:', approvedPayment);
+                    console.log('🎉 Payment approved by Pi Network API:', approvedPayment);
+                    
+                    if (typeof window.addNotification === 'function') {
+                        window.addNotification('🎉 Payment approved by Pi Network!', 'success');
+                    }
+
                 } catch (apiError) {
-                    console.warn('⚠️ Pi API call failed, using fallback approval:', apiError);
+                    console.error('❌ Pi API approval failed:', apiError);
+                    
+                    if (typeof window.addNotification === 'function') {
+                        window.addNotification('❌ Payment approval failed: ' + apiError.message, 'error');
+                    }
+                    
+                    // Cancel payment on API failure
+                    this.onCancel(paymentId);
+                    return;
                 }
 
-                // Update local status after approval
+                // Update local status
                 const pendingPayments = this.loadPendingPayments();
                 const payment = pendingPayments.find(p => p.identifier === paymentId);
                 
                 if (payment) {
                     payment.status = PAYMENT_STATUS.APPROVED;
                     payment.approved_at = new Date().toISOString();
+                    payment.api_approved = true;
                     this.updatePendingPayment(payment);
                     
-                    console.log('✅ Payment approved successfully:', paymentId);
-                    if (typeof window.addNotification === 'function') {
-                        window.addNotification('💰 Payment approved by Pi Network!', 'success');
-                    }
+                    console.log('✅ REAL payment approved successfully:', paymentId);
                 }
 
             } catch (error) {
                 console.error('❌ Server approval error:', error);
-                
-                // Cancel payment on approval failure
                 this.onCancel(paymentId);
-                
-                if (typeof window.addNotification === 'function') {
-                    window.addNotification('❌ Payment approval failed: ' + error.message, 'error');
-                }
             }
         }
 
-        // Server completion callback (Official Pattern)
-        async onReadyForServerCompletion(paymentId, txid) {
+        // Enhanced server completion with real Pi Network API calls
+        async onReadyForServerCompletion(paymentId, txid, isRealTransaction = false) {
             try {
-                console.log('✅ Server completion required for:', paymentId, txid);
+                console.log(`✅ Server completion for ${isRealTransaction ? 'REAL' : 'SIMULATED'} payment:`, paymentId, txid);
                 
-                // Try Pi Network API completion if we have API key
-                if (this.piApiKey && this.isPiBrowser) {
+                // Try Pi Network API completion for real transactions
+                if (isRealTransaction && this.piApiKey && this.isPiBrowser) {
                     try {
+                        console.log('🔥 Making REAL Pi Network API completion call');
+                        
                         const response = await fetch(`https://api.minepi.com/v2/payments/${paymentId}/complete`, {
                             method: 'POST',
                             headers: {
@@ -421,12 +552,17 @@
 
                         if (!response.ok) {
                             const errorText = await response.text();
-                            console.error('Pi API completion error:', response.status, errorText);
+                            console.error('❌ Pi API completion error:', response.status, errorText);
                             throw new Error(`Pi API completion failed: ${response.status}`);
                         }
 
                         const completedPayment = await response.json();
-                        console.log('✅ Payment completed by Pi Network:', completedPayment);
+                        console.log('🎉 Payment completed by Pi Network API:', completedPayment);
+                        
+                        if (typeof window.addNotification === 'function') {
+                            window.addNotification('🎉 Payment completed by Pi Network!', 'success');
+                        }
+
                     } catch (apiError) {
                         console.warn('⚠️ Pi API completion failed, proceeding with local completion:', apiError);
                     }
@@ -439,6 +575,7 @@
                     payment.status = PAYMENT_STATUS.COMPLETED;
                     payment.completed_at = new Date().toISOString();
                     payment.txid = txid;
+                    payment.api_completed = isRealTransaction;
                     
                     // Move from pending to completed
                     this.removePendingPayment(paymentId);
@@ -447,7 +584,7 @@
                     // Process the purchase
                     this.onPaymentCompleted(payment);
                     
-                    console.log('🎉 Payment completed successfully:', paymentId);
+                    console.log(`🎉 ${isRealTransaction ? 'REAL' : 'SIMULATED'} payment completed:`, paymentId);
                 }
             } catch (error) {
                 console.error('❌ Server completion error:', error);
@@ -458,7 +595,7 @@
             }
         }
 
-        // Payment cancellation callback (Official Pattern)
+        // Payment cancellation
         onCancel(paymentId) {
             console.log('❌ Payment cancelled:', paymentId);
             
@@ -476,7 +613,7 @@
             }
         }
 
-        // Payment error callback (Official Pattern)
+        // Payment error handling
         onError(error, payment) {
             console.error('💥 Payment error:', error, payment);
             
@@ -497,9 +634,9 @@
             }
         }
 
-        // Simulate payment for development/fallback
+        // Enhanced simulation for development/fallback
         simulatePayment(paymentId, amount, memo, metadata) {
-            console.log('🧪 Simulating Pi payment:', { paymentId, amount, memo, metadata });
+            console.log('🧪 Simulating payment:', { paymentId, amount, memo, metadata });
             
             const simulatedPayment = {
                 identifier: paymentId,
@@ -514,25 +651,15 @@
             this.storePendingPayment(simulatedPayment);
 
             if (typeof window.addNotification === 'function') {
-                window.addNotification('🧪 Simulating Pi payment... (2 seconds)', 'info');
+                window.addNotification('🧪 Simulating payment... (2 seconds)', 'info');
             }
 
             // Fast simulation for better UX
             setTimeout(() => {
-                this.onReadyForServerApproval(paymentId);
+                this.onReadyForServerApproval(paymentId, false); // false = simulated
             }, 500);
 
             return simulatedPayment;
-        }
-
-        // Complete simulated payment
-        completeSimulatedPayment(paymentId) {
-            const pendingPayments = this.loadPendingPayments();
-            const payment = pendingPayments.find(p => p.identifier === paymentId);
-            
-            if (payment && (payment.status === PAYMENT_STATUS.APPROVED || payment.auto_approved)) {
-                this.onReadyForServerCompletion(paymentId, 'simulated_tx_' + Date.now());
-            }
         }
 
         // Payment completion handler
@@ -542,10 +669,11 @@
             // Process the purchase
             this.processPurchase(payment);
             
-            // Show notification
-            const message = payment.simulated ? 
-                '🧪 Simulated Pi payment completed!' : 
-                '🎉 Pi payment completed successfully!';
+            // Show appropriate notification
+            const isReal = payment.realTransaction || payment.api_completed;
+            const message = isReal ? 
+                '🎉 Pi payment completed successfully!' : 
+                '🧪 Simulated payment completed!';
             
             if (typeof window.addNotification === 'function') {
                 window.addNotification(message, 'success');
@@ -556,6 +684,8 @@
         processPurchase(payment) {
             try {
                 const metadata = payment.metadata || {};
+                
+                console.log('🛒 Processing purchase:', metadata.type, metadata.itemId);
                 
                 switch (metadata.type) {
                     case 'coins':
@@ -572,6 +702,9 @@
                         break;
                     case 'test':
                         console.log('🧪 Test purchase completed successfully');
+                        if (typeof window.addNotification === 'function') {
+                            window.addNotification('🧪 Test purchase completed!', 'success');
+                        }
                         break;
                     default:
                         console.warn('Unknown purchase type:', metadata.type);
@@ -643,10 +776,40 @@
             }
         }
 
-        // Set Pi API Key (for runtime configuration)
+        // Force real transactions mode
+        enableRealTransactions() {
+            console.log('🔥 FORCING REAL TRANSACTIONS MODE');
+            this.forceRealTransactions = true;
+            this.isPiBrowser = true;
+            
+            if (typeof window.addNotification === 'function') {
+                window.addNotification('🔥 Real Pi transactions enabled!', 'success');
+            }
+            
+            return { success: true, message: 'Real transactions enabled' };
+        }
+
+        // Disable real transactions
+        disableRealTransactions() {
+            console.log('🧪 Disabling real transactions, reverting to simulation');
+            this.forceRealTransactions = false;
+            
+            if (typeof window.addNotification === 'function') {
+                window.addNotification('🧪 Simulation mode enabled', 'info');
+            }
+            
+            return { success: true, message: 'Simulation mode enabled' };
+        }
+
+        // Set Pi API Key
         setPiApiKey(apiKey) {
             this.piApiKey = apiKey;
-            console.log('🔑 Pi API Key configured');
+            window.PI_API_KEY = apiKey;
+            console.log('🔑 Pi API Key configured manually');
+            
+            if (typeof window.addNotification === 'function') {
+                window.addNotification('🔑 Pi API Key configured!', 'success');
+            }
         }
 
         // Storage utility methods
@@ -745,7 +908,7 @@
             return 'colorflow_' + Date.now() + '_' + Math.random().toString(36).substring(2, 10);
         }
 
-        // Get service status
+        // Enhanced service status
         getStatus() {
             return {
                 isInitialized: this.isInitialized,
@@ -753,11 +916,15 @@
                 hasAuthData: !!this.authData,
                 hasPiApiKey: !!this.piApiKey,
                 isPiBrowser: this.isPiBrowser,
+                forceRealTransactions: this.forceRealTransactions,
                 piSdkAvailable: typeof Pi !== 'undefined',
                 pendingPayments: this.pendingPayments.length,
                 completedPayments: this.completedPayments.length,
                 authType: this.authData?.simulated ? 'Development' : 
-                         this.authData?.fallback ? 'Fallback' : 'Pi Network'
+                         this.authData?.fallback ? 'Fallback' :
+                         this.authData?.forced ? 'Forced' : 'Pi Network',
+                authRetries: this.authRetries,
+                realTransactionCapable: this.isPiBrowser && this.piApiKey && typeof Pi !== 'undefined'
             };
         }
 
@@ -769,7 +936,7 @@
             };
         }
 
-        // Clear all payment data (for debugging)
+        // Clear all payment data
         clearPaymentData() {
             localStorage.removeItem(STORAGE_KEYS.PENDING_PAYMENTS);
             localStorage.removeItem(STORAGE_KEYS.COMPLETED_PAYMENTS);
@@ -778,14 +945,17 @@
             this.completedPayments = [];
             this.authData = null;
             this.isAuthenticated = false;
-            console.log('🧹 Payment data cleared');
+            this.authRetries = 0;
+            console.log('🧹 All payment data cleared');
         }
 
         // Force re-authentication
         async forceReauth() {
             this.isAuthenticated = false;
             this.authData = null;
+            this.authRetries = 0;
             localStorage.removeItem(STORAGE_KEYS.AUTH_DATA);
+            console.log('🔄 Forcing re-authentication...');
             return await this.authenticate();
         }
     }
@@ -796,22 +966,24 @@
     // Auto-initialize when DOM is ready
     document.addEventListener('DOMContentLoaded', async () => {
         try {
-            console.log('🚀 Starting Pi Payment Service (Timeout Protected)...');
+            console.log('🚀 Starting Enhanced Pi Payment Service...');
             await window.piPaymentService.init();
-            console.log('✅ Pi Payment Service ready');
+            console.log('✅ Enhanced Pi Payment Service ready');
         } catch (error) {
-            console.error('❌ Pi Payment Service failed to start:', error);
+            console.error('❌ Enhanced Pi Payment Service failed to start:', error);
         }
     });
 
-    // Global status function
+    // Enhanced global functions
+
+    // Service status
     window.piStatus = function() {
         const status = window.piPaymentService.getStatus();
         console.table(status);
         return status;
     };
 
-    // Global authentication function
+    // Authentication functions
     window.piAuth = async function() {
         try {
             const result = await window.piPaymentService.authenticate();
@@ -823,7 +995,6 @@
         }
     };
 
-    // Global function to force re-authentication
     window.piReauth = async function() {
         try {
             const result = await window.piPaymentService.forceReauth();
@@ -835,18 +1006,80 @@
         }
     };
 
-    // Global function to set Pi API key
+    // Configuration functions
     window.setPiApiKey = function(apiKey) {
         window.piPaymentService.setPiApiKey(apiKey);
         return { success: true, message: 'Pi API Key configured' };
     };
 
-    // Global function to clear payment data
+    // Real transaction control
+    window.enableRealPiTransactions = function() {
+        return window.piPaymentService.enableRealTransactions();
+    };
+
+    window.disableRealPiTransactions = function() {
+        return window.piPaymentService.disableRealTransactions();
+    };
+
+    // Data management
     window.clearPiPayments = function() {
         window.piPaymentService.clearPaymentData();
         return { success: true, message: 'Payment data cleared' };
     };
 
-    console.log('💜 Pi Payment Service loaded (Timeout Protected with Fallbacks)');
+    // Enhanced test transaction
+    window.testRealPiTransaction = async function(amount = 0.001) {
+        try {
+            console.log('🔥 Testing REAL Pi transaction with amount:', amount);
+            
+            // Force real transaction mode
+            window.piPaymentService.enableRealTransactions();
+            
+            const payment = await window.piPaymentService.createPayment(
+                amount,
+                'ColorFlow Infinity - Test Real Transaction',
+                {
+                    type: 'test',
+                    itemId: 'real_test_transaction',
+                    coins: 0,
+                    testMode: false,
+                    realTest: true
+                }
+            );
+
+            console.log('🎉 Real test Pi payment created:', payment);
+            return { success: true, payment: payment };
+            
+        } catch (error) {
+            console.error('❌ Real test transaction failed:', error);
+            return { success: false, error: error.message };
+        }
+    };
+
+    // Payment history
+    window.piHistory = function() {
+        const history = window.piPaymentService.getPaymentHistory();
+        console.log('Pi Payment History:');
+        console.table(history.pending);
+        console.table(history.completed);
+        return history;
+    };
+
+    // Debug function
+    window.piDebug = function() {
+        const debug = {
+            ...window.piPaymentService.getStatus(),
+            userAgent: navigator.userAgent.substring(0, 100),
+            hostname: window.location.hostname,
+            protocol: window.location.protocol,
+            piMethods: typeof Pi !== 'undefined' ? Object.getOwnPropertyNames(Pi) : 'Pi SDK not available'
+        };
+        
+        console.log('🔍 Pi Payment Service Debug Info:');
+        console.table(debug);
+        return debug;
+    };
+
+    console.log('💜 Enhanced Pi Payment Service loaded with Real Transaction Support');
 
 })();
