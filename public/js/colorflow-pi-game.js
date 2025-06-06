@@ -182,16 +182,16 @@
             }
         },
         themes: {
-            default: { id: 'default', name: 'Classic', price: 0, icon: 'fas fa-palette', description: 'Original ColorFlow colors', type: 'free' },
+            default: { id: 'default', name: 'Classic', price: 0.001, icon: 'fas fa-palette', description: 'Original ColorFlow colors', type: 'free' },
             neon: { id: 'neon', name: 'Neon Lights', price: 0.005, colors: THEME_COLORS.neon, icon: 'fas fa-lightbulb', description: 'Bright electric colors', type: 'pi' },
             aqua: { id: 'aqua', name: 'Ocean Depth', price: 0.003, colors: THEME_COLORS.aqua, icon: 'fas fa-water', description: 'Deep sea blues and greens', type: 'pi' },
             space: { id: 'space', name: 'Galaxy', price: 0.002, colors: THEME_COLORS.space, icon: 'fas fa-rocket', description: 'Cosmic purples and blues', type: 'pi' },
-            amega: { id: 'fixio', name: 'Fixio Blur', price: 2.0, colors: THEME_COLORS.amega, icon: 'fas fa-crown', description: 'Premium studio theme', type: 'pi' }
+            amega: { id: 'fixio', name: 'Fixio Blur', price: 0.0001, colors: THEME_COLORS.amega, icon: 'fas fa-crown', description: 'Premium studio theme', type: 'pi' }
         },
         effects: {
             default: { id: 'default', name: 'Classic', price: 0, icon: 'fas fa-star', description: 'Standard visual effects', type: 'free' },
-            sparkle: { id: 'sparkle', name: 'Sparkle', price: 0.6, icon: 'fas fa-star', description: 'Glittering star effects', type: 'pi' },
-            trail: { id: 'trail', name: 'Neon Trail', price: 1.0, icon: 'fas fa-fire', description: 'Glowing connection trails', type: 'pi' },
+            sparkle: { id: 'sparkle', name: 'Sparkle', price: 0.003, icon: 'fas fa-star', description: 'Glittering star effects', type: 'pi' },
+            trail: { id: 'trail', name: 'Neon Trail', price: 0.002, icon: 'fas fa-fire', description: 'Glowing connection trails', type: 'pi' },
             explosion: { id: 'explosion', name: 'Star Burst', price: 1.5, icon: 'fas fa-bomb', description: 'Explosive point effects', type: 'pi' }
         }
     };
