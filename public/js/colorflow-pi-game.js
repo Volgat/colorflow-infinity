@@ -184,8 +184,8 @@
         themes: {
             default: { id: 'default', name: 'Classic', price: 0, icon: 'fas fa-palette', description: 'Original ColorFlow colors', type: 'free' },
             neon: { id: 'neon', name: 'Neon Lights', price: 0.005, colors: THEME_COLORS.neon, icon: 'fas fa-lightbulb', description: 'Bright electric colors', type: 'pi' },
-            aqua: { id: 'aqua', name: 'Ocean Depth', price: 0.8, colors: THEME_COLORS.aqua, icon: 'fas fa-water', description: 'Deep sea blues and greens', type: 'pi' },
-            space: { id: 'space', name: 'Galaxy', price: 1.2, colors: THEME_COLORS.space, icon: 'fas fa-rocket', description: 'Cosmic purples and blues', type: 'pi' },
+            aqua: { id: 'aqua', name: 'Ocean Depth', price: 0.003, colors: THEME_COLORS.aqua, icon: 'fas fa-water', description: 'Deep sea blues and greens', type: 'pi' },
+            space: { id: 'space', name: 'Galaxy', price: 0.002, colors: THEME_COLORS.space, icon: 'fas fa-rocket', description: 'Cosmic purples and blues', type: 'pi' },
             amega: { id: 'fixio', name: 'Fixio Blur', price: 2.0, colors: THEME_COLORS.amega, icon: 'fas fa-crown', description: 'Premium studio theme', type: 'pi' }
         },
         effects: {
