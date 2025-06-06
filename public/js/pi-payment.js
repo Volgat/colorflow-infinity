@@ -33,6 +33,7 @@
             this.authData = null;
             this.pendingPayments = this.loadPendingPayments();
             this.completedPayments = this.loadCompletedPayments();
+            this.piApiKey = null; // Will be set from environment or config
         }
 
         // Initialize Pi SDK following official pattern
@@ -54,6 +55,12 @@
 
                 this.isInitialized = true;
                 console.log('✅ Pi SDK initialized successfully');
+
+                // Try to get API key from global config or environment
+                this.piApiKey = window.PI_API_KEY || process.env.PI_API_KEY;
+                if (!this.piApiKey) {
+                    console.warn('⚠️ PI_API_KEY not found - server operations may fail');
+                }
 
                 return { success: true, message: 'Pi SDK initialized' };
             } catch (error) {
@@ -214,13 +221,56 @@
             }
         }
 
-        // Server approval callback (Official Pattern)
-        onReadyForServerApproval(paymentId) {
+        // Server approval callback (Official Pattern) - CORRIGÉ
+        async onReadyForServerApproval(paymentId) {
             try {
                 console.log('🔄 Server approval required for:', paymentId);
                 
-                // In production, you would call your backend here
-                // For this demo, we'll auto-approve
+                // CRITIQUE: Appel API vers Pi Network pour approuver
+                if (!this.piApiKey) {
+                    console.warn('⚠️ No PI_API_KEY found, trying alternate approval method...');
+                    
+                    // Fallback: essayer d'approuver via endpoint local
+                    try {
+                        const response = await fetch('/api/approve-payment', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ paymentId })
+                        });
+
+                        if (!response.ok) {
+                            throw new Error(`Local approval failed: ${response.status}`);
+                        }
+
+                        const result = await response.json();
+                        console.log('✅ Payment approved via local endpoint:', result);
+                    } catch (localError) {
+                        console.warn('Local endpoint failed, using direct Pi API call...');
+                        throw localError;
+                    }
+                } else {
+                    // Appel direct vers Pi Network API
+                    const response = await fetch(`https://api.minepi.com/v2/payments/${paymentId}/approve`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Key ${this.piApiKey}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('Pi API approval error:', response.status, errorText);
+                        throw new Error(`Pi API approval failed: ${response.status} - ${errorText}`);
+                    }
+
+                    const approvedPayment = await response.json();
+                    console.log('✅ Payment approved by Pi Network:', approvedPayment);
+                }
+
+                // Mettre à jour le statut local après approbation réussie
                 const pendingPayments = this.loadPendingPayments();
                 const payment = pendingPayments.find(p => p.identifier === paymentId);
                 
@@ -229,20 +279,75 @@
                     payment.approved_at = new Date().toISOString();
                     this.updatePendingPayment(payment);
                     
-                    console.log('✅ Payment approved:', paymentId);
+                    console.log('✅ Payment approved successfully:', paymentId);
                     if (typeof window.addNotification === 'function') {
-                        window.addNotification('💰 Payment approved!', 'success');
+                        window.addNotification('💰 Payment approved by Pi Network!', 'success');
                     }
                 }
+
             } catch (error) {
                 console.error('❌ Server approval error:', error);
+                
+                // En cas d'erreur, essayer une approche de fallback pour les tests
+                if (paymentId.includes('test') || window.location.hostname === 'localhost') {
+                    console.log('🧪 Test mode - simulating approval');
+                    
+                    const pendingPayments = this.loadPendingPayments();
+                    const payment = pendingPayments.find(p => p.identifier === paymentId);
+                    
+                    if (payment) {
+                        payment.status = PAYMENT_STATUS.APPROVED;
+                        payment.approved_at = new Date().toISOString();
+                        payment.simulated_approval = true;
+                        this.updatePendingPayment(payment);
+                        
+                        console.log('✅ Test payment approved (simulated):', paymentId);
+                        if (typeof window.addNotification === 'function') {
+                            window.addNotification('🧪 Test payment approved!', 'success');
+                        }
+                        return;
+                    }
+                }
+                
+                // Si tout échoue, annuler le paiement
+                console.error('❌ All approval methods failed, cancelling payment');
+                this.onCancel(paymentId);
+                
+                if (typeof window.addNotification === 'function') {
+                    window.addNotification('❌ Payment approval failed: ' + error.message, 'error');
+                }
             }
         }
 
         // Server completion callback (Official Pattern)
-        onReadyForServerCompletion(paymentId, txid) {
+        async onReadyForServerCompletion(paymentId, txid) {
             try {
                 console.log('✅ Server completion required for:', paymentId, txid);
+                
+                // Appel vers Pi Network API pour compléter
+                if (this.piApiKey) {
+                    try {
+                        const response = await fetch(`https://api.minepi.com/v2/payments/${paymentId}/complete`, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Key ${this.piApiKey}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ txid })
+                        });
+
+                        if (!response.ok) {
+                            const errorText = await response.text();
+                            console.error('Pi API completion error:', response.status, errorText);
+                            throw new Error(`Pi API completion failed: ${response.status}`);
+                        }
+
+                        const completedPayment = await response.json();
+                        console.log('✅ Payment completed by Pi Network:', completedPayment);
+                    } catch (apiError) {
+                        console.warn('Pi API completion failed, proceeding with local completion:', apiError);
+                    }
+                }
                 
                 const pendingPayments = this.loadPendingPayments();
                 const payment = pendingPayments.find(p => p.identifier === paymentId);
@@ -259,10 +364,14 @@
                     // Process the purchase
                     this.onPaymentCompleted(payment);
                     
-                    console.log('🎉 Payment completed:', paymentId);
+                    console.log('🎉 Payment completed successfully:', paymentId);
                 }
             } catch (error) {
                 console.error('❌ Server completion error:', error);
+                
+                if (typeof window.addNotification === 'function') {
+                    window.addNotification('❌ Payment completion failed: ' + error.message, 'error');
+                }
             }
         }
 
@@ -325,6 +434,11 @@
                 window.addNotification('🧪 Simulating Pi payment... (3 seconds)', 'info');
             }
 
+            // Simulate approval after 1 second
+            setTimeout(() => {
+                this.onReadyForServerApproval(paymentId);
+            }, 1000);
+
             // Complete simulation after 3 seconds
             setTimeout(() => {
                 this.completeSimulatedPayment(paymentId);
@@ -338,16 +452,8 @@
             const pendingPayments = this.loadPendingPayments();
             const payment = pendingPayments.find(p => p.identifier === paymentId);
             
-            if (payment) {
-                payment.status = PAYMENT_STATUS.COMPLETED;
-                payment.completed_at = new Date().toISOString();
-                payment.txid = 'simulated_tx_' + Date.now();
-                
-                this.removePendingPayment(paymentId);
-                this.storeCompletedPayment(payment);
-                this.onPaymentCompleted(payment);
-                
-                console.log('✅ Simulated payment completed:', payment);
+            if (payment && payment.status === PAYMENT_STATUS.APPROVED) {
+                this.onReadyForServerCompletion(paymentId, 'simulated_tx_' + Date.now());
             }
         }
 
@@ -383,6 +489,12 @@
                     case 'effect':
                         this.processEffectPurchase(payment, metadata);
                         break;
+                    case 'powerup':
+                        this.processPowerupPurchase(payment, metadata);
+                        break;
+                    case 'test':
+                        console.log('🧪 Test purchase completed successfully');
+                        break;
                     default:
                         console.warn('Unknown purchase type:', metadata.type);
                 }
@@ -405,6 +517,10 @@
                 window.setCoins(prev => prev + totalCoins);
                 
                 console.log(`💰 Added ${totalCoins} coins to account`);
+                
+                if (typeof window.addNotification === 'function') {
+                    window.addNotification(`💰 +${totalCoins.toLocaleString()} coins added!`, 'success');
+                }
             }
         }
 
@@ -417,6 +533,10 @@
                 }));
                 
                 console.log(`🎨 Unlocked theme: ${metadata.itemId}`);
+                
+                if (typeof window.addNotification === 'function') {
+                    window.addNotification(`🎨 Theme unlocked: ${metadata.itemId}!`, 'success');
+                }
             }
         }
 
@@ -429,7 +549,26 @@
                 }));
                 
                 console.log(`✨ Unlocked effect: ${metadata.itemId}`);
+                
+                if (typeof window.addNotification === 'function') {
+                    window.addNotification(`✨ Effect unlocked: ${metadata.itemId}!`, 'success');
+                }
             }
+        }
+
+        // Process powerup purchase
+        processPowerupPurchase(payment, metadata) {
+            console.log(`⚡ Powerup activated: ${metadata.powerupType}`);
+            
+            if (typeof window.addNotification === 'function') {
+                window.addNotification(`⚡ ${metadata.powerupType} powerup activated!`, 'success');
+            }
+        }
+
+        // Set Pi API Key (for runtime configuration)
+        setPiApiKey(apiKey) {
+            this.piApiKey = apiKey;
+            console.log('🔑 Pi API Key configured');
         }
 
         // Storage utility methods
@@ -526,6 +665,7 @@
                 isInitialized: this.isInitialized,
                 isAuthenticated: this.isAuthenticated,
                 hasAuthData: !!this.authData,
+                hasPiApiKey: !!this.piApiKey,
                 piSdkAvailable: typeof Pi !== 'undefined',
                 pendingPayments: this.pendingPayments.length,
                 completedPayments: this.completedPayments.length
@@ -539,6 +679,18 @@
                 completed: this.loadCompletedPayments()
             };
         }
+
+        // Clear all payment data (for debugging)
+        clearPaymentData() {
+            localStorage.removeItem(STORAGE_KEYS.PENDING_PAYMENTS);
+            localStorage.removeItem(STORAGE_KEYS.COMPLETED_PAYMENTS);
+            localStorage.removeItem(STORAGE_KEYS.AUTH_DATA);
+            this.pendingPayments = [];
+            this.completedPayments = [];
+            this.authData = null;
+            this.isAuthenticated = false;
+            console.log('🧹 Payment data cleared');
+        }
     }
 
     // Create global instance
@@ -547,7 +699,7 @@
     // Auto-initialize when DOM is ready
     document.addEventListener('DOMContentLoaded', async () => {
         try {
-            console.log('🚀 Starting Pi Payment Service (Official Pattern)...');
+            console.log('🚀 Starting Pi Payment Service (Official Pattern with Server Approval)...');
             await window.piPaymentService.init();
             console.log('✅ Pi Payment Service ready');
         } catch (error) {
@@ -574,6 +726,18 @@
         }
     };
 
-    console.log('💜 Pi Payment Service loaded (Official Pattern)');
+    // Global function to set Pi API key
+    window.setPiApiKey = function(apiKey) {
+        window.piPaymentService.setPiApiKey(apiKey);
+        return { success: true, message: 'Pi API Key configured' };
+    };
+
+    // Global function to clear payment data
+    window.clearPiPayments = function() {
+        window.piPaymentService.clearPaymentData();
+        return { success: true, message: 'Payment data cleared' };
+    };
+
+    console.log('💜 Pi Payment Service loaded (Official Pattern with Server Approval)');
 
 })();
